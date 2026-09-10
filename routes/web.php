@@ -25,10 +25,9 @@ use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StockController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('guest')->group(function () {
-    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [LoginController::class, 'login']);
-});
+Route::get('/', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('/', [LoginController::class, 'login'])->middleware('guest');
+Route::redirect('/login', '/');
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
@@ -36,8 +35,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
-
-    Route::get('/', fn () => redirect()->route('dashboard'));
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
