@@ -38,6 +38,7 @@ class AuditLog extends Model
         'description',
         'properties',
         'ip_address',
+        'ip_location',
         'user_agent',
     ];
 

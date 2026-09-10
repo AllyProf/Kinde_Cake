@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\CakePointNotificationService;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -21,6 +22,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Paginator::useBootstrapFour();
+
         View::composer(['layouts.partials._header', 'layouts.partials._sidebar'], function ($view) {
             if (! auth()->check()) {
                 $view->with([

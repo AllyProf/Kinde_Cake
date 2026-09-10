@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Services\IpLookupService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class AuditLogController extends Controller
 {
+    public function __construct(private IpLookupService $ipLookup) {}
+
     public function index(Request $request): View
     {
         $validated = $request->validate([
@@ -28,12 +31,22 @@ class AuditLogController extends Controller
             ->when($validated['q'] ?? null, function ($query, $term) {
                 $query->where(function ($inner) use ($term) {
                     $inner->where('description', 'like', "%{$term}%")
-                        ->orWhere('ip_address', 'like', "%{$term}%");
+                        ->orWhere('ip_address', 'like', "%{$term}%")
+                        ->orWhere('ip_location', 'like', "%{$term}%");
                 });
             })
             ->latest()
             ->paginate(25)
             ->withQueryString();
+
+        foreach ($logs as $log) {
+            if ($log->ip_address && ! $log->ip_location) {
+                $location = $this->ipLookup->lookup($log->ip_address);
+                if ($location !== null) {
+                    $log->forceFill(['ip_location' => $location])->save();
+                }
+            }
+        }
 
         $users = User::query()
             ->orderBy('name')

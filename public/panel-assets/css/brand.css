@@ -454,6 +454,16 @@ input[type="color"].form-control:focus {
   background-color: var(--brand) !important;
 }
 
+.widget-small.success.coloured-icon {
+  background-color: #fff;
+  color: #2a2a2a;
+}
+
+.widget-small.success.coloured-icon .icon {
+  background-color: #28a745;
+  color: #fff;
+}
+
 .app-page-loader {
   position: fixed;
   inset: 0;
