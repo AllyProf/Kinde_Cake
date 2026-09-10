@@ -10,7 +10,6 @@
     <link rel="stylesheet" type="text/css" href="{{ asset('panel-assets/css/main.css') }}">
     @include('layouts.partials._theme-vars')
     <link rel="stylesheet" type="text/css" href="{{ asset('panel-assets/css/brand.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ asset('panel-assets/css/responsive.css') }}">
     <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     @stack('styles')
   </head>
