@@ -1,0 +1,719 @@
+:root {
+  --sidebar-bg: #222d32;
+  --sidebar-profile-bg: #2a383e;
+  --sidebar-active-bg: #1a2226;
+  --sidebar-submenu-bg: #2a383e;
+  --sidebar-hover-bg: #0d1214;
+  --sidebar-divider: rgba(255, 255, 255, 0.12);
+}
+
+body,
+.app-content,
+.app-title,
+.tile-title {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+.fa, .fas, .far, .fab, .icon, [class^="fa-"], [class*=" fa-"], i, .app-sidebar__toggle {
+  font-family: FontAwesome !important;
+}
+
+.app-header,
+.app-header__logo {
+  background-color: var(--brand) !important;
+}
+
+.app-header__logo {
+  color: var(--white) !important;
+  font-weight: 700;
+  width: 230px;
+  max-width: 230px;
+}
+
+.app-nav__item,
+.app-search__input,
+.app-search__button {
+  color: var(--white) !important;
+}
+
+.app-sidebar__toggle {
+  color: var(--white) !important;
+}
+
+.app-sidebar__toggle:hover,
+.app-sidebar__toggle:focus {
+  background-color: rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Sidebar — dark theme with brand accent, expandable submenus */
+.app-sidebar {
+  background-color: var(--sidebar-bg) !important;
+  box-shadow: 0 8px 17px rgba(0, 0, 0, 0.35) !important;
+}
+
+.app-sidebar__user {
+  border-bottom: 1px solid var(--sidebar-divider);
+  margin-bottom: 0 !important;
+  background: var(--sidebar-profile-bg) !important;
+  padding: 12px 10px;
+  align-items: center;
+}
+
+.app-sidebar__user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 48px;
+  margin-right: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+.app-sidebar__user-avatar-initials {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  margin-right: 12px;
+  border-radius: 50%;
+  background-color: var(--brand);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+.app-sidebar__user-info {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.app-sidebar__user-name {
+  color: var(--white) !important;
+  font-weight: 700 !important;
+  font-size: 17px;
+  line-height: 1.3;
+  margin-bottom: 2px;
+}
+
+.app-sidebar__user-designation {
+  color: var(--white) !important;
+  font-size: 13px;
+  font-weight: 400;
+  opacity: 0.85;
+  margin-bottom: 0;
+}
+
+.app-sidebar__impersonation-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #ffc107 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.app-sidebar .app-menu {
+  padding-top: 10px;
+}
+
+.app-menu > li {
+  border-bottom: none;
+  margin-bottom: 6px;
+}
+
+.app-menu > li:last-child {
+  margin-bottom: 0;
+}
+
+.app-sidebar .app-menu__item,
+.app-sidebar .app-menu__icon,
+.app-sidebar .app-menu__label,
+.app-sidebar .treeview-item,
+.app-sidebar .treeview-indicator {
+  color: var(--white) !important;
+}
+
+.app-sidebar .app-menu__item,
+.app-sidebar .treeview-item {
+  transition: none !important;
+}
+
+.app-sidebar .app-menu__item {
+  border-left: 3px solid transparent !important;
+  background: transparent !important;
+  padding: 13px 15px !important;
+  min-height: 44px;
+  font-size: 13px !important;
+  font-weight: 400;
+  gap: 12px;
+}
+
+.app-sidebar .app-menu__icon {
+  flex: 0 0 16px !important;
+  width: 16px !important;
+  min-width: 16px !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  text-align: center;
+  opacity: 0.82;
+  margin-right: 0 !important;
+}
+
+.app-sidebar .app-menu__label {
+  font-size: 13px !important;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.app-sidebar .app-menu__item.active .app-menu__icon,
+.app-sidebar .app-menu__item:hover .app-menu__icon,
+.app-sidebar .app-menu__item:focus .app-menu__icon {
+  opacity: 1;
+}
+
+.app-sidebar .app-menu__item:hover,
+.app-sidebar .app-menu__item:focus {
+  background: var(--sidebar-hover-bg) !important;
+  border-left-color: var(--brand) !important;
+  text-decoration: none;
+}
+
+.app-sidebar .app-menu__item.active {
+  background: var(--sidebar-active-bg) !important;
+  border-left-color: var(--brand) !important;
+}
+
+.app-sidebar .treeview.is-expanded > .app-menu__item,
+.app-sidebar .treeview.is-expanded [data-toggle='treeview'] {
+  background: var(--sidebar-active-bg) !important;
+  border-left-color: var(--brand) !important;
+}
+
+.app-sidebar .treeview-menu {
+  background: var(--sidebar-submenu-bg) !important;
+  padding: 6px 0 8px !important;
+  max-height: 0 !important;
+  overflow: hidden;
+  transition: max-height 0.65s ease-in-out !important;
+}
+
+.app-sidebar .treeview.is-expanded .treeview-menu {
+  max-height: 100vh !important;
+}
+
+.app-sidebar .treeview-menu > li {
+  padding-left: 0;
+  border-bottom: none;
+  margin-bottom: 2px;
+}
+
+.app-sidebar .treeview-menu > li:last-child {
+  margin-bottom: 0;
+}
+
+.app-sidebar .treeview-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px 9px 34px !important;
+  min-height: 36px;
+  border-left: 3px solid transparent;
+  font-size: 12.5px !important;
+  line-height: 1.35;
+  transition: none !important;
+}
+
+.app-sidebar .treeview-item i,
+.app-sidebar .treeview-item .icon {
+  flex: 0 0 14px !important;
+  width: 14px !important;
+  min-width: 14px !important;
+  margin-right: 0 !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.78) !important;
+  flex-shrink: 0;
+}
+
+.app-sidebar .treeview-item.active i,
+.app-sidebar .treeview-item:hover i,
+.app-sidebar .treeview-item:focus i {
+  color: var(--white) !important;
+  opacity: 1;
+}
+
+.app-sidebar .treeview-item:hover,
+.app-sidebar .treeview-item:focus,
+.app-sidebar .treeview-item.active {
+  background: var(--sidebar-active-bg) !important;
+  color: var(--white) !important;
+  border-left-color: var(--brand) !important;
+  text-decoration: none;
+}
+
+.app-sidebar .treeview-indicator {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px !important;
+  opacity: 0.65;
+  transition: transform 0.65s ease-in-out !important;
+}
+
+.app-sidebar .treeview.is-expanded .treeview-indicator {
+  transform: translateY(-50%) rotate(90deg);
+}
+
+.app-sidebar .treeview > .app-menu__item {
+  position: relative;
+}
+
+.app-sidebar a:hover,
+.app-sidebar a:focus {
+  text-decoration: none;
+}
+
+.app-sidebar a {
+  color: var(--white) !important;
+}
+
+.btn-primary,
+.bg-primary,
+.badge-primary {
+  background-color: var(--brand) !important;
+  border-color: var(--brand) !important;
+  color: var(--white) !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active,
+.btn-primary:not(:disabled):not(.disabled):active,
+.btn-primary:not(:disabled):not(.disabled).active,
+.show > .btn-primary.dropdown-toggle {
+  background-color: var(--brand-dark) !important;
+  border-color: var(--brand-dark) !important;
+  color: var(--white) !important;
+}
+
+.btn-primary:focus,
+.btn-primary.focus,
+.btn-primary:not(:disabled):not(.disabled):active:focus,
+.btn-primary:not(:disabled):not(.disabled).active:focus {
+  box-shadow: 0 0 0 0.2rem rgba(var(--brand-rgb), 0.28) !important;
+}
+
+.btn-outline-primary {
+  color: var(--brand) !important;
+  border-color: var(--brand) !important;
+  background-color: transparent !important;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus,
+.btn-outline-primary:active,
+.btn-outline-primary:not(:disabled):not(.disabled):active {
+  color: var(--white) !important;
+  background-color: var(--brand) !important;
+  border-color: var(--brand) !important;
+}
+
+.text-primary {
+  color: var(--brand) !important;
+}
+
+/* Form inputs — brand palette */
+.control-label,
+label.control-label,
+.form-group > label,
+.login-content .login-box label {
+  color: var(--black) !important;
+  font-weight: 600;
+}
+
+.form-control,
+.custom-select,
+select.form-control,
+textarea.form-control,
+input.form-control {
+  color: var(--black) !important;
+  background-color: var(--white) !important;
+  border-color: rgba(0, 0, 0, 0.18) !important;
+}
+
+.form-control:focus,
+.custom-select:focus,
+select.form-control:focus,
+textarea.form-control:focus,
+input.form-control:focus {
+  color: var(--black) !important;
+  background-color: var(--white) !important;
+  border-color: var(--brand) !important;
+  box-shadow: 0 0 0 0.2rem rgba(var(--brand-rgb), 0.22) !important;
+}
+
+.form-control::placeholder {
+  color: rgba(0, 0, 0, 0.45) !important;
+}
+
+.input-group-text {
+  color: var(--black);
+  background-color: var(--white);
+  border-color: rgba(0, 0, 0, 0.18);
+}
+
+.input-group:focus-within .input-group-text,
+.input-group:focus-within .form-control,
+.input-group:focus-within .btn-outline-secondary {
+  border-color: var(--brand) !important;
+}
+
+.input-group .form-control:focus ~ .input-group-append .btn-outline-secondary,
+.input-group .form-control:focus ~ .input-group-append .btn-outline-primary {
+  border-color: var(--brand) !important;
+}
+
+.animated-checkbox input[type="checkbox"]:checked + .label-text:before,
+.animated-radio-button input[type="radio"]:checked + .label-text:before {
+  color: var(--brand) !important;
+}
+
+.custom-control-input:checked ~ .custom-control-label::before,
+.custom-checkbox .custom-control-input:checked ~ .custom-control-label::before,
+.custom-radio .custom-control-input:checked ~ .custom-control-label::before {
+  background-color: var(--brand) !important;
+  border-color: var(--brand) !important;
+}
+
+.custom-control-input:focus ~ .custom-control-label::before {
+  box-shadow: 0 0 0 0.2rem rgba(var(--brand-rgb), 0.22) !important;
+}
+
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+  background-color: var(--brand) !important;
+  color: var(--white) !important;
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--brand) !important;
+  border-color: #dee2e6 #dee2e6 var(--white);
+}
+
+.page-item.active .page-link {
+  background-color: var(--brand) !important;
+  border-color: var(--brand) !important;
+  color: var(--white) !important;
+}
+
+.page-link {
+  color: var(--brand);
+}
+
+.page-link:hover {
+  color: var(--brand-dark);
+}
+
+.login-content .login-box .login-head {
+  color: var(--brand) !important;
+  border-bottom-color: rgba(var(--brand-rgb), 0.22) !important;
+}
+
+.login-content .login-box .login-head i {
+  color: var(--brand) !important;
+}
+
+.btn-group-toggle .btn-outline-primary.active,
+.btn-group-toggle .btn-outline-primary:not(:disabled):not(.disabled):active,
+.btn-group-toggle .btn-outline-primary:not(:disabled):not(.disabled).active {
+  background-color: var(--brand) !important;
+  border-color: var(--brand) !important;
+  color: var(--white) !important;
+}
+
+.btn-group-toggle .btn-outline-secondary.active,
+.btn-group-toggle .btn-outline-secondary:not(:disabled):not(.disabled):active,
+.btn-group-toggle .btn-outline-secondary:not(:disabled):not(.disabled).active {
+  background-color: var(--brand) !important;
+  border-color: var(--brand) !important;
+  color: var(--white) !important;
+}
+
+input[type="color"].form-control:focus {
+  border-color: var(--brand) !important;
+  box-shadow: 0 0 0 0.2rem rgba(var(--brand-rgb), 0.22) !important;
+}
+
+.widget-small.primary.coloured-icon .icon {
+  background-color: var(--brand) !important;
+}
+
+.app-page-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.52);
+  backdrop-filter: blur(2px);
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+
+.app-page-loader.is-done {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.app-page-loader__spinner {
+  position: relative;
+  width: 52px;
+  height: 52px;
+}
+
+.app-page-loader__spinner::before,
+.app-page-loader__spinner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid transparent;
+}
+
+.app-page-loader__spinner::before {
+  border-top-color: var(--brand);
+  border-right-color: var(--brand);
+  animation: appLoaderSpin 0.85s linear infinite;
+}
+
+.app-page-loader__spinner::after {
+  inset: 8px;
+  border-bottom-color: var(--white);
+  border-left-color: var(--white);
+  animation: appLoaderSpin 0.65s linear infinite reverse;
+}
+
+@keyframes appLoaderSpin {
+  to { transform: rotate(360deg); }
+}
+
+.btn.is-loading,
+button.is-loading,
+input[type="submit"].is-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.92;
+}
+
+.btn.is-loading .app-btn-spinner,
+button.is-loading .app-btn-spinner {
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.btn.is-loading .app-btn-label,
+button.is-loading .app-btn-label {
+  display: inline-block;
+}
+
+@media (max-width: 767.98px) {
+  .app-search {
+    display: none !important;
+  }
+
+  .app-sidebar {
+    padding-top: 52px;
+  }
+}
+
+.pace {
+  display: none !important;
+}
+
+.impersonation-banner {
+  position: fixed;
+  top: 50px;
+  left: 0;
+  right: 0;
+  z-index: 1029;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 1.25rem;
+  background: #fff3cd;
+  border-bottom: 1px solid #ffeeba;
+  color: #856404;
+  font-size: 0.92rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+body.is-impersonating .app-content {
+  margin-top: 90px;
+}
+
+body.is-impersonating .app-sidebar {
+  padding-top: 110px;
+}
+
+@media (max-width: 767.98px) {
+  body.is-impersonating .app-content {
+    margin-top: 96px;
+  }
+
+  body.is-impersonating .app-sidebar {
+    padding-top: 116px;
+  }
+}
+
+.impersonation-banner__content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.impersonation-banner .btn-light {
+  color: #856404;
+  border-color: #ffeeba;
+  background: #fff;
+}
+
+@media (max-width: 767.98px) {
+  .impersonation-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.app-nav__item--notify {
+  position: relative;
+}
+
+.app-nav__badge,
+.app-menu__badge {
+  position: absolute;
+  top: 8px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #dc3545;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.app-menu__badge {
+  position: static;
+  display: inline-block;
+  margin-left: 6px;
+  vertical-align: middle;
+  min-width: 16px;
+  height: 16px;
+  line-height: 16px;
+  font-size: 9px;
+}
+
+.app-sidebar .treeview-item .badge {
+  margin-left: auto;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 9px;
+  line-height: 16px;
+}
+
+/* Bootstrap modals — ensure a visible dim overlay above header/sidebar */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.55) !important;
+  z-index: 1060 !important;
+}
+
+.modal-backdrop.fade {
+  opacity: 0;
+}
+
+.modal-backdrop.show {
+  opacity: 1 !important;
+}
+
+.modal {
+  z-index: 1070 !important;
+}
+
+.modal-content {
+  background-color: #fff !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+body.modal-open .app-page-loader {
+  display: none !important;
+}
+
+/* SweetAlert — Vali default uses a white overlay; use a proper dark dim instead */
+.sweet-overlay {
+  background-color: rgba(0, 0, 0, 0.55) !important;
+  z-index: 10000 !important;
+}
+
+.sweet-alert {
+  z-index: 10001 !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Login page — cake cafe background */
+.material-half-bg {
+  background-color: #2a1f1c;
+}
+
+.material-half-bg .cover {
+  height: 100vh;
+  background-color: transparent;
+  background-image:
+    linear-gradient(rgba(20, 12, 10, 0.42), rgba(20, 12, 10, 0.55)),
+    url('../images/login-cafe-background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.login-content .logo h1 {
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
+}
+
+/* SweetAlert OK / confirm buttons use theme brand colour */
+.sweet-alert button.confirm,
+.sweet-alert button:not(.cancel) {
+  background-color: var(--brand) !important;
+  border-color: var(--brand) !important;
+  color: var(--white) !important;
+}
+
+.sweet-alert button.confirm:hover,
+.sweet-alert button:not(.cancel):hover {
+  background-color: var(--brand-dark) !important;
+  border-color: var(--brand-dark) !important;
+}
+
+.sweet-alert button.confirm:active,
+.sweet-alert button:not(.cancel):active {
+  background-color: var(--brand-dark) !important;
+  border-color: var(--brand-dark) !important;
+}
+
+.sweet-alert button.confirm:focus,
+.sweet-alert button:not(.cancel):focus {
+  box-shadow: 0 0 0 0.2rem rgba(var(--brand-rgb), 0.28) !important;
+}

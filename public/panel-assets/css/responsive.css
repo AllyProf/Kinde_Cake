@@ -1,0 +1,989 @@
+/**
+ * Mobile & tablet portrait only — desktop (768px+) is unchanged.
+ * All rules live inside max-width: 767.98px.
+ */
+
+@media (max-width: 767.98px) {
+  /* --- Layout --- */
+  .app-content {
+    padding: 15px;
+  }
+
+  .app-title {
+    margin: -15px -15px 15px;
+    padding: 16px 15px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .app-title h1 {
+    font-size: 1.35rem;
+    line-height: 1.3;
+  }
+
+  .app-title p {
+    font-size: 0.875rem;
+    margin-bottom: 0;
+  }
+
+  .app-breadcrumb {
+    margin: 0;
+    padding: 0;
+    font-size: 0.85rem;
+  }
+
+  /* --- Header --- */
+  .app-header {
+    align-items: center;
+    min-height: 50px;
+  }
+
+  .app-header__logo {
+    width: auto !important;
+    max-width: none !important;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1.25rem;
+    text-align: left;
+    padding: 0 8px 0 0;
+    line-height: 50px;
+    height: 50px;
+  }
+
+  .app-sidebar__toggle {
+    display: flex;
+    align-items: center;
+    height: 50px;
+    line-height: 1;
+  }
+
+  .app-nav {
+    flex-shrink: 0;
+    align-items: center;
+    height: 50px;
+  }
+
+  .app-nav > li {
+    display: flex;
+    align-items: center;
+    height: 50px;
+  }
+
+  .app-nav__item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 50px;
+    padding: 0 12px;
+    line-height: 1;
+  }
+
+  .app-nav__badge {
+    top: 10px;
+    right: 4px;
+  }
+
+  .app-notification.dropdown-menu {
+    width: min(320px, calc(100vw - 24px));
+  }
+
+  /* --- Tiles & widgets --- */
+  .tile {
+    padding: 18px;
+  }
+
+  .tile .tile-title {
+    font-size: 1.2rem;
+    margin-bottom: 14px;
+    word-break: break-word;
+    line-height: 1.35;
+  }
+
+  .tile .tile-title-w-btn {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .tile .tile-title-w-btn p {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .tile .tile-title-w-btn .btn,
+  .tile .tile-title-w-btn .btn-group {
+    margin: 0 !important;
+  }
+
+  .widget-small {
+    margin-bottom: 15px;
+  }
+
+  .widget-small .icon {
+    min-width: 70px;
+    padding: 14px;
+    font-size: 2rem;
+  }
+
+  .widget-small .info {
+    padding: 0 14px;
+    min-width: 0;
+  }
+
+  .widget-small .info h4 {
+    font-size: 0.9rem;
+  }
+
+  .widget-small .info p {
+    font-size: 1.1rem;
+    word-break: break-word;
+  }
+
+  /* --- Forms & filters --- */
+  .form-inline {
+    display: block;
+  }
+
+  .form-inline .form-group,
+  .form-inline .form-control,
+  .form-inline .btn,
+  .form-inline label {
+    display: block;
+    width: 100%;
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+  }
+
+  .form-inline .form-group {
+    margin-bottom: 0.75rem;
+  }
+
+  .form-inline .btn {
+    width: auto;
+    min-width: 120px;
+  }
+
+  .form-row .form-group[class*="col-"] {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  .form-row .form-group .btn {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  .form-row .form-group .btn + .btn,
+  .form-row .form-group .btn + a.btn {
+    margin-top: 0.5rem;
+  }
+
+  .nav-pills {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .nav-pills .nav-item {
+    margin-bottom: 0;
+  }
+
+  .nav-pills .nav-link {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.9rem;
+  }
+
+  /* --- Tables --- */
+  .table-responsive {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-content .table {
+    font-size: 0.875rem;
+  }
+
+  .app-content .table th,
+  .app-content .table td {
+    white-space: nowrap;
+  }
+
+  .btn-group.btn-group-sm,
+  .tile-body .btn-group {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  /* --- Modals --- */
+  .modal-dialog {
+    margin: 0.75rem auto;
+    max-width: calc(100% - 1.5rem);
+  }
+
+  .modal-body {
+    padding: 1rem;
+  }
+
+  .modal-footer {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .modal-footer .btn {
+    flex: 1 1 auto;
+    min-width: 100px;
+  }
+
+  /* --- Dashboard charts --- */
+  .dashboard-chart-row > [class*="col-"] {
+    margin-bottom: 0.75rem;
+  }
+
+  .dashboard-chart-frame {
+    height: 220px;
+  }
+
+  .dashboard-chart-frame--round {
+    width: min(260px, 100%);
+  }
+
+  .dashboard-chart-empty {
+    height: 220px;
+    padding: 1rem;
+    font-size: 0.9rem;
+  }
+
+  /* --- Quick actions & lists --- */
+  .list-group-item {
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .list-group-item .badge.float-right {
+    float: none !important;
+    margin-left: 0.5rem;
+  }
+
+  /* --- Horizontal tabs --- */
+  .tile .nav-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .tile .nav-tabs .nav-link {
+    white-space: nowrap;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* --- Login --- */
+  .login-content {
+    padding: 1rem;
+  }
+
+  .login-content .logo {
+    margin-bottom: 24px;
+  }
+
+  .login-content .logo h1 {
+    font-size: 2.25rem;
+  }
+
+  .login-content .login-box {
+    min-width: 0;
+    width: 100%;
+    max-width: 400px;
+    min-height: 0;
+  }
+
+  .login-content .login-box .login-form,
+  .login-content .login-box .semibold-text {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  /* --- Misc --- */
+  .impersonation-banner {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .impersonation-banner .btn {
+    width: 100%;
+  }
+
+  .sweet-alert {
+    width: calc(100% - 2rem) !important;
+    max-width: 420px;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+
+  /* --- Sale show page --- */
+  .sale-show-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .sale-show-actions .btn,
+  .sale-show-actions form {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  .sale-show-actions form .btn {
+    width: 100%;
+  }
+
+  .col-lg-5 > .tile .tile-body p {
+    word-break: break-word;
+  }
+
+  /* --- Mobile card tables (sales list + sale detail) --- */
+  .sales-filter-bar {
+    padding: 0.65rem 0.75rem 0.75rem;
+  }
+
+  .sales-filter-row > [class*="col-"] {
+    margin-bottom: 0.5rem;
+  }
+
+  .sales-filter-row > [class*="col-"]:last-child {
+    margin-bottom: 0;
+  }
+
+  .sales-list.table-responsive,
+  .detail-table-wrap.table-responsive,
+  .cake-point-list.table-responsive,
+  .customers-list.table-responsive {
+    overflow: visible;
+    border: none;
+  }
+
+  .sales-list-table,
+  .detail-card-table {
+    border: none;
+  }
+
+  .sales-list-table thead,
+  .detail-card-table thead {
+    display: none;
+  }
+
+  .sales-list-table tbody tr,
+  .detail-card-table tbody tr {
+    display: block;
+    margin-bottom: 0.85rem;
+    padding: 0.85rem;
+    background: #fff;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+
+  .sales-list-table tbody tr.sale-row-voided {
+    background: #f8f9fa;
+  }
+
+  .sales-list-table tbody tr:hover,
+  .detail-card-table tbody tr:hover {
+    background: #fff;
+  }
+
+  .sales-list-table tbody tr.sale-row-voided:hover {
+    background: #f8f9fa;
+  }
+
+  .sales-list-table tbody td,
+  .detail-card-table tbody td {
+    display: block;
+    position: relative;
+    padding: 0.4rem 0 0.4rem 40% !important;
+    border: none !important;
+    white-space: normal !important;
+    text-align: right;
+    min-height: 1.75rem;
+  }
+
+  .sales-list-table tbody td::before,
+  .detail-card-table tbody td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 0;
+    top: 0.4rem;
+    width: 38%;
+    font-weight: 600;
+    font-size: 0.78rem;
+    color: #6c757d;
+    text-align: left;
+    line-height: 1.35;
+  }
+
+  .sales-list-table .sale-items-summary {
+    max-width: none;
+    text-align: right;
+  }
+
+  .sales-list-table tbody td[data-label="Status"] .badge {
+    margin-left: 0.2rem;
+  }
+
+  .sales-list-table tbody td.sales-list-actions,
+  .cake-point-table tbody td.cake-point-actions,
+  .customers-list-table tbody td.customers-list-actions,
+  .settings-list-table tbody td.settings-list-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding-left: 0 !important;
+    padding-top: 0.65rem !important;
+    margin-top: 0.35rem;
+    border-top: 1px solid #eee !important;
+    text-align: left;
+  }
+
+  .sales-list-table tbody td.sales-list-actions::before,
+  .cake-point-table tbody td.cake-point-actions::before,
+  .customers-list-table tbody td.customers-list-actions::before,
+  .settings-list-table tbody td.settings-list-actions::before {
+    position: static;
+    flex: 0 0 100%;
+    width: 100%;
+    margin-bottom: 0.1rem;
+  }
+
+  .sales-list-table tbody td.sales-list-actions .btn,
+  .cake-point-table tbody td.cake-point-actions .btn,
+  .customers-list-table tbody td.customers-list-actions .btn,
+  .settings-list-table tbody td.settings-list-actions .btn {
+    white-space: normal;
+    margin-bottom: 0 !important;
+  }
+
+  .cake-point-table tbody td.cake-point-actions form {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .cake-point-table tbody td.cake-point-actions form .btn {
+    width: 100%;
+  }
+
+  .cake-point-table tbody td.cake-point-actions > .btn,
+  .cake-point-table tbody td.cake-point-actions > .js-pay-sale {
+    flex: 1 1 calc(50% - 0.2rem);
+    min-width: calc(50% - 0.2rem);
+  }
+
+  .cake-point-table tbody td.cake-point-actions .text-muted.small {
+    flex: 1 1 100%;
+    text-align: left;
+    line-height: 1.4;
+  }
+
+  .customers-list-table tbody td.customers-list-actions form {
+    flex: 1 1 calc(50% - 0.2rem);
+    min-width: calc(50% - 0.2rem);
+  }
+
+  .customers-list-table tbody td.customers-list-actions form .btn {
+    width: 100%;
+  }
+
+  .customers-list-table tbody td.customers-list-actions > .btn,
+  .settings-list-table tbody td.settings-list-actions > .btn {
+    flex: 1 1 calc(50% - 0.2rem);
+    min-width: calc(50% - 0.2rem);
+  }
+
+  .settings-list-table tbody td.settings-list-actions form {
+    flex: 1 1 calc(50% - 0.2rem);
+    min-width: calc(50% - 0.2rem);
+  }
+
+  .settings-list-table tbody td.settings-list-actions form .btn {
+    width: 100%;
+  }
+
+  .customer-form-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .customer-form-footer .btn {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  .sales-list-table tbody td.sales-list-actions .btn-outline-primary {
+    flex: 0 0 100%;
+    width: 100%;
+    text-align: center;
+  }
+
+  .sales-list-table tbody td.sales-list-actions .btn-outline-primary small {
+    display: inline;
+    margin-left: 0.35rem;
+  }
+
+  .sales-list-table tbody td.sales-list-actions .js-pay-sale {
+    flex: 1 1 auto;
+    min-width: 3rem;
+  }
+
+  .sales-list-table tbody td.sales-list-actions .btn-group {
+    flex: 1 1 auto;
+  }
+
+  .sales-list-table tbody td.sales-list-actions .btn-group .dropdown-toggle {
+    width: 100%;
+  }
+
+  .sales-list-table tbody tr#salesEmptyRow td,
+  .sales-list-table tbody tr#salesNoMatchRow td {
+    display: block;
+    text-align: center;
+    padding-left: 0 !important;
+  }
+
+  .sales-list-table tbody tr#salesEmptyRow td::before,
+  .sales-list-table tbody tr#salesNoMatchRow td::before {
+    display: none;
+  }
+
+  .detail-card-table tbody td[data-label="Total"] {
+    font-size: 1rem;
+  }
+
+  .cake-point-table tbody tr.cake-point-row--new {
+    background: #fffbf0;
+  }
+
+  .cake-point-table tbody tr.cake-point-row--new:hover {
+    background: #fffbf0;
+  }
+
+  .cake-point-table tbody td[colspan] {
+    display: block;
+    text-align: center;
+    padding-left: 0 !important;
+  }
+
+  .cake-point-table tbody td[colspan]::before {
+    display: none;
+  }
+
+  .cake-point-order-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .cake-point-order-summary .mr-3 {
+    margin-right: 0 !important;
+  }
+
+  #cakePointOrderForm .btn-primary[type="submit"] {
+    width: 100%;
+  }
+
+  /* --- Day closes --- */
+  .day-close-missed-alert {
+    padding: 0.85rem 1rem;
+  }
+
+  .day-close-missed-list {
+    padding-left: 1rem;
+  }
+
+  .day-close-filter-form .form-control,
+  .day-close-filter-form .btn {
+    width: 100%;
+  }
+
+  .day-close-filter-form .control-label {
+    display: block;
+    width: 100%;
+    margin-right: 0 !important;
+  }
+
+  .day-close-section-head {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.65rem;
+  }
+
+  .day-close-section-head .btn {
+    width: 100%;
+  }
+
+  .day-close-submit-form .btn {
+    width: 100%;
+  }
+
+  .day-close-summary-wrap {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .day-close-summary-table {
+    margin-bottom: 0 !important;
+    border: none !important;
+  }
+
+  .day-close-summary-table tbody {
+    display: block;
+  }
+
+  .day-close-summary-table tbody tr {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.7rem 0.85rem;
+    border-bottom: 1px solid #eef0f2 !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+  }
+
+  .day-close-summary-table tbody tr:last-child {
+    border-bottom: none !important;
+  }
+
+  .day-close-summary-table th,
+  .day-close-summary-table td {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto !important;
+    border: none !important;
+    padding: 0 !important;
+    white-space: normal !important;
+    word-break: break-word;
+    background: transparent !important;
+  }
+
+  .day-close-summary-table th {
+    flex: 0 0 44%;
+    max-width: 44%;
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: 600;
+    text-align: left;
+    line-height: 1.35;
+  }
+
+  .day-close-summary-table td {
+    flex: 1 1 56%;
+    text-align: right;
+    font-size: 0.88rem;
+    line-height: 1.4;
+  }
+
+  .day-close-summary-table tr.day-close-provider-row {
+    background: #fafbfc;
+  }
+
+  .day-close-summary-table tr.day-close-provider-row th {
+    flex: 0 0 44%;
+    padding-left: 0.35rem !important;
+    font-size: 0.76rem;
+    font-weight: 500;
+    color: #868e96;
+  }
+
+  .day-close-summary-table tr.day-close-provider-row td {
+    font-size: 0.84rem;
+  }
+
+  .day-close-summary-table tr.day-close-summary-row--total {
+    background: #f4f6f8;
+  }
+
+  .day-close-summary-table tr.day-close-summary-row--net {
+    background: #eef6ee;
+  }
+
+  .day-close-summary-table tr.day-close-summary-row--total th,
+  .day-close-summary-table tr.day-close-summary-row--total td {
+    font-size: 0.92rem;
+    color: #212529;
+  }
+
+  .day-close-expenses-table tbody td.day-close-expense-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding-left: 0 !important;
+    padding-top: 0.65rem !important;
+    margin-top: 0.35rem;
+    border-top: 1px solid #eee !important;
+    text-align: left;
+  }
+
+  .day-close-expenses-table tbody td.day-close-expense-actions::before {
+    position: static;
+    flex: 0 0 100%;
+    width: 100%;
+    margin-bottom: 0.1rem;
+  }
+
+  .day-close-expenses-table tbody td.day-close-expense-actions form {
+    width: 100%;
+  }
+
+  .day-close-expenses-table tbody td.day-close-expense-actions .btn {
+    width: 100%;
+  }
+
+  .detail-card-table tbody td[colspan] {
+    display: block;
+    text-align: center;
+    padding-left: 0 !important;
+  }
+
+  .detail-card-table tbody td[colspan]::before {
+    display: none;
+  }
+
+  /* --- Day reports --- */
+  .day-report-filters .form-group {
+    margin-bottom: 0.65rem;
+  }
+
+  .day-report-filter-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .day-report-filter-actions .btn {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  .day-report-widgets > [class*="col-"] {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  .day-report-balance-box {
+    padding: 0.85rem !important;
+  }
+
+  .day-report-balance-box .day-close-summary-wrap {
+    border: none;
+    border-radius: 0;
+  }
+
+  .day-report-sidebar-action .btn {
+    width: 100%;
+  }
+
+  /* --- Business trends --- */
+  .business-trends-filters .row > [class*="col-"] {
+    margin-bottom: 0.65rem;
+  }
+
+  .business-trends-filter-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .business-trends-filter-actions .btn {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  .business-trends-widgets > [class*="col-"] {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  .trends-chart-row > [class*="col-"] {
+    margin-bottom: 0.75rem;
+  }
+
+  .trends-chart-frame {
+    height: 220px !important;
+  }
+
+  .trends-chart-frame--round {
+    width: min(260px, 100%) !important;
+  }
+
+  .trends-chart-empty {
+    height: 220px !important;
+    padding: 1rem;
+    font-size: 0.9rem;
+  }
+
+  /* --- Settings --- */
+  .settings-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .settings-tabs .nav-link {
+    white-space: nowrap;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .settings-import-form {
+    display: block;
+    width: 100%;
+  }
+
+  .settings-import-form .btn {
+    width: 100%;
+  }
+
+  .settings-add-section > [class*="col-"] {
+    margin-bottom: 1rem;
+  }
+
+  .settings-add-form > [class*="col-"],
+  .settings-edit-form > [class*="col-"] {
+    margin-bottom: 0.5rem;
+  }
+
+  .settings-list.table-responsive {
+    overflow: visible;
+    border: none;
+  }
+
+  .settings-list-table tbody tr.settings-edit-row:not(.show):not(.collapsing) {
+    display: none !important;
+    margin: 0;
+    padding: 0;
+    border: none !important;
+  }
+
+  .settings-list-table tbody tr.settings-edit-row.show,
+  .settings-list-table tbody tr.settings-edit-row.collapsing {
+    display: block !important;
+    margin-bottom: 0.85rem;
+    padding: 0;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 6px;
+    box-shadow: none;
+  }
+
+  .settings-list-table tbody tr.settings-edit-row td {
+    display: block !important;
+    padding: 0.85rem !important;
+    text-align: left;
+    min-height: 0;
+  }
+
+  .settings-list-table tbody tr.settings-edit-row td::before {
+    display: none !important;
+  }
+
+  .settings-edit-form .btn-block {
+    width: 100%;
+  }
+
+  /* --- Sale create / edit form --- */
+  .sale-form-section-head {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.5rem;
+  }
+
+  .sale-form-section-head .btn {
+    width: 100%;
+  }
+
+  .sale-customer-chip {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .sale-form-list.table-responsive {
+    overflow: visible;
+    border: none;
+  }
+
+  .sale-form-table tbody td {
+    display: block;
+    padding: 0.55rem 0.85rem !important;
+    padding-left: 0.85rem !important;
+    text-align: left;
+    min-height: 0;
+  }
+
+  .sale-form-table tbody td + td {
+    border-top: 1px solid #eef0f2 !important;
+  }
+
+  .sale-form-table tbody td::before {
+    position: static;
+    display: block;
+    width: 100%;
+    margin-bottom: 0.35rem;
+    left: auto;
+    top: auto;
+  }
+
+  .sale-form-table tbody td.sale-form-row-actions {
+    padding-top: 0.65rem !important;
+  }
+
+  .sale-form-table tbody td.sale-form-row-actions .btn {
+    width: 100%;
+  }
+
+  .sale-form-table .select2-container {
+    width: 100% !important;
+    max-width: 100%;
+  }
+
+  .sale-total-bar {
+    text-align: center;
+    font-size: 1rem;
+  }
+
+  .sale-form-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .sale-form-footer .btn {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  .sales-list + .pagination,
+  .sales-list ~ nav .pagination,
+  nav .pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem;
+  }
+
+  nav .pagination .page-link {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.875rem;
+  }
+}
