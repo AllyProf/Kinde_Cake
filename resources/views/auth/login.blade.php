@@ -57,6 +57,16 @@
   </section>
 @endsection
 
+@push('styles')
+  <style>
+    .material-half-bg .cover {
+      background-image:
+        linear-gradient(rgba(20, 12, 10, 0.42), rgba(20, 12, 10, 0.55)),
+        url('{{ asset('storage/landing_images/cake.jpg') }}');
+    }
+  </style>
+@endpush
+
 @push('scripts')
   <script>
     (function () {

@@ -681,9 +681,6 @@ body.modal-open .app-page-loader {
 .material-half-bg .cover {
   height: 100vh;
   background-color: transparent;
-  background-image:
-    linear-gradient(rgba(20, 12, 10, 0.42), rgba(20, 12, 10, 0.55)),
-    url('../images/login-cafe-background.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

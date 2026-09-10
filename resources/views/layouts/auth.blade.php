@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Login') - {{ config('app.name', 'Kinde Cake') }}</title>
+    @include('layouts.partials._favicon')
     <link rel="stylesheet" type="text/css" href="{{ asset('panel-assets/css/main.css') }}">
     @include('layouts.partials._theme-vars')
     <link rel="stylesheet" type="text/css" href="{{ asset('panel-assets/css/brand.css') }}">
