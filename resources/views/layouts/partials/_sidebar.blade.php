@@ -19,19 +19,18 @@
   $showReports = $isOwner;
   $showCatalog = $isOwner;
   $showAdministration = $isOwner;
+
+  $businessName = app(\App\Services\AppSettingsService::class)->get('business_name', config('app.name', 'Kinde Cake'));
+  $businessInitial = mb_strtoupper(mb_substr(trim($businessName ?: 'K'), 0, 1));
 @endphp
 
 <div class="app-sidebar__overlay" data-toggle="sidebar"></div>
 <aside class="app-sidebar">
-  <div class="app-sidebar__user">
-    @if($user->hasPhoto())
-      <img src="{{ $user->photoUrl() }}" alt="{{ $user->name }}" class="app-sidebar__user-avatar">
-    @else
-      <div class="app-sidebar__user-avatar-initials" aria-hidden="true">{{ $user->initials() }}</div>
-    @endif
-    <div class="app-sidebar__user-info">
-      <p class="app-sidebar__user-name">{{ $user->name }}</p>
-      <p class="app-sidebar__user-designation">{{ $user->roleLabel() }}</p>
+  <div class="app-sidebar__brand">
+    <div class="app-sidebar__brand-mark" aria-hidden="true">{{ $businessInitial }}</div>
+    <div class="app-sidebar__brand-info">
+      <p class="app-sidebar__brand-name">{{ $businessName }}</p>
+      <p class="app-sidebar__brand-role">{{ $user->roleLabel() }}</p>
       @if(\App\Models\User::isImpersonating())
         <p class="app-sidebar__impersonation-note">
           <i class="fa fa-user-secret"></i> Impersonating

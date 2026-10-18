@@ -57,7 +57,7 @@
 
           <form method="GET" action="{{ route('business-trends.index') }}" class="business-trends-filters">
             <input type="hidden" name="period" value="{{ $period }}">
-            <div class="row align-items-end">
+            <div class="row business-trends-filter-row align-items-end">
               <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                 @if($isMonth)
                   <label class="control-label" for="trendsMonth">Month</label>
@@ -69,12 +69,9 @@
                   </label>
                   <input type="date" class="form-control" id="trendsDate" name="date"
                     value="{{ $selectedDate->format('Y-m-d') }}" max="{{ now()->format('Y-m-d') }}">
-                  @if($isWeek)
-                    <small class="text-muted d-block mt-1">{{ $range['label'] }}</small>
-                  @endif
                 @endif
               </div>
-              <div class="col-12 col-md-8 col-lg-5 business-trends-filter-actions">
+              <div class="col-12 col-sm-6 col-md-8 col-lg-auto business-trends-filter-actions">
                 <button type="submit" class="btn btn-primary">
                   <i class="fa fa-search"></i> View trends
                 </button>
@@ -83,6 +80,11 @@
                 </a>
               </div>
             </div>
+            @if($isWeek)
+              <p class="business-trends-week-range text-muted mb-0 mt-2">
+                <small>{{ $range['label'] }}</small>
+              </p>
+            @endif
           </form>
         </div>
       </div>
@@ -90,42 +92,30 @@
   </div>
 
   @if($hasData)
-    <div class="row mb-3 business-trends-widgets">
+    <div class="row dashboard-stat-cards mb-3 business-trends-widgets">
       <div class="col-12 col-md-3 col-sm-6">
-        <div class="widget-small success coloured-icon">
-          <i class="icon fa fa-money fa-3x"></i>
-          <div class="info">
-            <h4>Collected</h4>
-            <p><b>{{ number_format($summary['total_collected'] ?? 0, 0) }} TZS</b></p>
-          </div>
-        </div>
+        @include('partials._stat-card', [
+          'label' => 'Collected',
+          'value' => number_format($summary['total_collected'] ?? 0, 0).' TZS',
+        ])
       </div>
       <div class="col-12 col-md-3 col-sm-6">
-        <div class="widget-small primary coloured-icon">
-          <i class="icon fa fa-shopping-cart fa-3x"></i>
-          <div class="info">
-            <h4>Sales total</h4>
-            <p><b>{{ number_format($summary['sales_total'] ?? 0, 0) }} TZS</b></p>
-          </div>
-        </div>
+        @include('partials._stat-card', [
+          'label' => 'Sales total',
+          'value' => number_format($summary['sales_total'] ?? 0, 0).' TZS',
+        ])
       </div>
       <div class="col-12 col-md-3 col-sm-6">
-        <div class="widget-small danger coloured-icon">
-          <i class="icon fa fa-minus-circle fa-3x"></i>
-          <div class="info">
-            <h4>Expenses</h4>
-            <p><b>{{ number_format($summary['expenses_total'] ?? 0, 0) }} TZS</b></p>
-          </div>
-        </div>
+        @include('partials._stat-card', [
+          'label' => 'Expenses',
+          'value' => number_format($summary['expenses_total'] ?? 0, 0).' TZS',
+        ])
       </div>
       <div class="col-12 col-md-3 col-sm-6">
-        <div class="widget-small info coloured-icon">
-          <i class="icon fa fa-line-chart fa-3x"></i>
-          <div class="info">
-            <h4>Net in hand</h4>
-            <p><b>{{ number_format($report['net_in_hand'] ?? 0, 0) }} TZS</b></p>
-          </div>
-        </div>
+        @include('partials._stat-card', [
+          'label' => 'Net in hand',
+          'value' => number_format($report['net_in_hand'] ?? 0, 0).' TZS',
+        ])
       </div>
     </div>
 

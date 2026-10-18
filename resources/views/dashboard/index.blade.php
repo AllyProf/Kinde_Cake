@@ -29,51 +29,36 @@
     </div>
   @endforeach
 
-  <div class="row mb-3">
+  <div class="row dashboard-stat-cards mb-3">
     <div class="col-md-6 col-lg-3">
-      <div class="widget-small success coloured-icon">
-        <i class="icon fa fa-money fa-3x"></i>
-        <div class="info">
-          <h4>Collected today</h4>
-          <p><b>{{ number_format($stats['today_collected'] ?? 0, 0) }} TZS</b></p>
-        </div>
-      </div>
+      @include('partials._stat-card', [
+        'label' => 'Collected today',
+        'value' => number_format($stats['today_collected'] ?? 0, 0).' TZS',
+      ])
     </div>
     <div class="col-md-6 col-lg-3">
-      <div class="widget-small primary coloured-icon">
-        <i class="icon fa fa-shopping-cart fa-3x"></i>
-        <div class="info">
-          <h4>Sales today</h4>
-          <p><b>{{ number_format($stats['today_sales_count'] ?? 0) }}</b></p>
-        </div>
-      </div>
+      @include('partials._stat-card', [
+        'label' => 'Sales today',
+        'value' => number_format($stats['today_sales_count'] ?? 0),
+      ])
     </div>
     <div class="col-md-6 col-lg-3">
-      <div class="widget-small info coloured-icon">
-        <i class="icon fa fa-calendar fa-3x"></i>
-        <div class="info">
-          <h4>{{ $is_owner ? 'Month collected' : 'My month collected' }}</h4>
-          <p><b>{{ number_format($stats['month_collected'] ?? 0, 0) }} TZS</b></p>
-        </div>
-      </div>
+      @include('partials._stat-card', [
+        'label' => $is_owner ? 'Month collected' : 'My month collected',
+        'value' => number_format($stats['month_collected'] ?? 0, 0).' TZS',
+      ])
     </div>
     <div class="col-md-6 col-lg-3">
       @if($has_sales_access)
-        <div class="widget-small warning coloured-icon">
-          <i class="icon fa fa-credit-card fa-3x"></i>
-          <div class="info">
-            <h4>Outstanding debt</h4>
-            <p><b>{{ number_format($stats['outstanding_debt'] ?? 0, 0) }} TZS</b></p>
-          </div>
-        </div>
+        @include('partials._stat-card', [
+          'label' => 'Outstanding debt',
+          'value' => number_format($stats['outstanding_debt'] ?? 0, 0).' TZS',
+        ])
       @else
-        <div class="widget-small danger coloured-icon">
-          <i class="icon fa fa-minus-circle fa-3x"></i>
-          <div class="info">
-            <h4>Expenses today</h4>
-            <p><b>{{ number_format($stats['today_expenses'] ?? 0, 0) }} TZS</b></p>
-          </div>
-        </div>
+        @include('partials._stat-card', [
+          'label' => 'Expenses today',
+          'value' => number_format($stats['today_expenses'] ?? 0, 0).' TZS',
+        ])
       @endif
     </div>
   </div>

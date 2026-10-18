@@ -3,9 +3,42 @@
     <div class="tile">
       <h3 class="tile-title">Appearance</h3>
       <div class="tile-body">
-        <form action="{{ route('settings.appearance.update') }}" method="POST">
+        <form action="{{ route('settings.appearance.update') }}" method="POST" enctype="multipart/form-data">
           @csrf
           @method('PUT')
+
+          <div class="form-group">
+            <label class="control-label">Page background image</label>
+            @if($panelBackgroundUrl)
+              <div class="panel-bg-preview mb-2">
+                <img src="{{ $panelBackgroundUrl }}" alt="Current page background" class="panel-bg-preview__image">
+              </div>
+              <div class="animated-checkbox mb-2">
+                <label>
+                  <input type="checkbox" name="remove_panel_background" value="1">
+                  <span class="label-text">Remove current background image</span>
+                </label>
+              </div>
+            @endif
+            <div class="custom-file">
+              <input type="file" class="custom-file-input @error('panel_background') is-invalid @enderror"
+                id="panelBackgroundInput" name="panel_background" accept="image/jpeg,image/png,image/webp">
+              <label class="custom-file-label" for="panelBackgroundInput">Choose image…</label>
+            </div>
+            @error('panel_background')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+            <label class="control-label mt-3" for="panelBackgroundDisplay">Background style</label>
+            <select class="form-control" id="panelBackgroundDisplay" name="panel_background_display">
+              <option value="repeat" @selected(old('panel_background_display', $panelBackgroundDisplay ?? 'repeat') === 'repeat')>
+                Repeating pattern (shows between white cards)
+              </option>
+              <option value="cover" @selected(old('panel_background_display', $panelBackgroundDisplay ?? 'repeat') === 'cover')>
+                Full-page photo (single image, cover)
+              </option>
+            </select>
+            <small class="text-muted d-block mt-2">
+              Applies to logged-in pages only (login keeps the default cake photo). Use a light watermark with <strong>Repeating pattern</strong>. JPG, PNG, or WebP, up to 4 MB.
+            </small>
+          </div>
 
           <div class="form-group">
             <label class="control-label">Brand color <span class="text-danger">*</span></label>
@@ -48,13 +81,11 @@
           <strong>{{ $business['name'] ?? config('app.name') }}</strong> header
         </div>
         <button type="button" class="btn btn-primary mb-2 js-preview-button">Primary button</button>
-        <div class="widget-small primary coloured-icon js-preview-widget">
-          <i class="icon fa fa-shopping-cart fa-3x"></i>
-          <div class="info">
-            <h4>Sample widget</h4>
-            <p><b>123</b></p>
-          </div>
-        </div>
+        @include('partials._stat-card', [
+          'label' => 'Sample stat card',
+          'value' => '123',
+          'class' => 'js-preview-stat-card',
+        ])
       </div>
     </div>
   </div>
@@ -67,6 +98,7 @@
       var text = document.getElementById('brandColorText');
       var previewBadge = document.querySelector('.js-brand-color-preview');
       var previewHeader = document.querySelector('.js-preview-header');
+      var previewStat = document.querySelector('.js-preview-stat-card');
       if (!picker || !text) return;
 
       function normalizeHex(value) {
@@ -89,11 +121,23 @@
           previewBadge.style.borderColor = normalized;
         }
         if (previewHeader) previewHeader.style.backgroundColor = normalized;
+        if (previewStat) previewStat.style.borderTopColor = normalized;
       }
 
       picker.addEventListener('input', function () { applyColor(picker.value); });
       text.addEventListener('input', function () { applyColor(text.value); });
       applyColor(text.value);
+
+      var fileInput = document.getElementById('panelBackgroundInput');
+      if (fileInput) {
+        fileInput.addEventListener('change', function () {
+          var label = fileInput.nextElementSibling;
+          if (!label) return;
+          label.textContent = fileInput.files && fileInput.files[0]
+            ? fileInput.files[0].name
+            : 'Choose image…';
+        });
+      }
     })();
   </script>
 @endpush

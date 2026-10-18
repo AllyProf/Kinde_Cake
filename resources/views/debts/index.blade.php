@@ -15,33 +15,24 @@
     </ul>
   </div>
 
-  <div class="row mb-3">
+  <div class="row dashboard-stat-cards mb-3">
     <div class="col-md-4">
-      <div class="widget-small primary coloured-icon">
-        <i class="icon fa fa-list fa-3x"></i>
-        <div class="info">
-          <h4>Open debts</h4>
-          <p><b>{{ number_format($stats['count']) }}</b></p>
-        </div>
-      </div>
+      @include('partials._stat-card', [
+        'label' => 'Open debts',
+        'value' => number_format($stats['count']),
+      ])
     </div>
     <div class="col-md-4">
-      <div class="widget-small info coloured-icon">
-        <i class="icon fa fa-money fa-3x"></i>
-        <div class="info">
-          <h4>Total outstanding</h4>
-          <p><b>{{ number_format($stats['total_outstanding'], 0) }} TZS</b></p>
-        </div>
-      </div>
+      @include('partials._stat-card', [
+        'label' => 'Total outstanding',
+        'value' => number_format($stats['total_outstanding'], 0).' TZS',
+      ])
     </div>
     <div class="col-md-4">
-      <div class="widget-small danger coloured-icon">
-        <i class="icon fa fa-exclamation-triangle fa-3x"></i>
-        <div class="info">
-          <h4>Overdue</h4>
-          <p><b>{{ number_format($stats['overdue_count']) }}</b></p>
-        </div>
-      </div>
+      @include('partials._stat-card', [
+        'label' => 'Overdue',
+        'value' => number_format($stats['overdue_count']),
+      ])
     </div>
   </div>
 

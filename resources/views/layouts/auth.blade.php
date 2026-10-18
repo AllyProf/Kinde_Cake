@@ -14,7 +14,6 @@
     @stack('styles')
   </head>
   <body>
-    @include('layouts.partials._page-loader')
     @yield('content')
 
     <script src="{{ asset('panel-assets/js/jquery-3.2.1.min.js') }}"></script>
@@ -23,7 +22,6 @@
     <script src="{{ asset('panel-assets/js/main.js') }}"></script>
     <script src="{{ asset('panel-assets/js/plugins/sweetalert.min.js') }}"></script>
     @include('layouts.partials._flash-swal')
-    <script src="{{ asset('panel-assets/js/app-page-loader.js') }}"></script>
     <script src="{{ asset('panel-assets/js/app-button-loader.js') }}"></script>
     @stack('scripts')
   </body>

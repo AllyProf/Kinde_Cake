@@ -55,29 +55,37 @@
                         <span class="badge badge-secondary">Inactive</span>
                       @endif
                     </td>
-                    <td>
+                    <td class="staff-list-actions text-nowrap">
                       @if($member->is_active)
                         <form action="{{ route('impersonate.start', $member) }}" method="POST" class="d-inline">
                           @csrf
-                          <button type="submit" class="btn btn-sm btn-info" title="View app as this staff member">
-                            <i class="fa fa-user-secret"></i> Impersonate
+                          <button type="submit" class="btn btn-sm btn-info btn-icon-only"
+                            title="Impersonate {{ $member->name }}"
+                            aria-label="Impersonate {{ $member->name }}">
+                            <i class="fa fa-user-secret"></i>
                           </button>
                         </form>
                       @endif
-                      <a class="btn btn-sm btn-primary" href="{{ route('staff.edit', $member) }}">
-                        <i class="fa fa-edit"></i> Edit
+                      <a class="btn btn-sm btn-primary btn-icon-only" href="{{ route('staff.edit', $member) }}"
+                        title="Edit {{ $member->name }}"
+                        aria-label="Edit {{ $member->name }}">
+                        <i class="fa fa-edit"></i>
                       </a>
-                      <button type="button" class="btn btn-sm btn-warning js-reset-password"
+                      <button type="button" class="btn btn-sm btn-warning btn-icon-only js-reset-password"
                         data-staff-id="{{ $member->id }}"
                         data-staff-name="{{ $member->name }}"
                         data-action="{{ route('staff.reset-password', $member) }}"
-                        title="Set a new password for this staff member">
-                        <i class="fa fa-key"></i> Reset password
+                        title="Reset password for {{ $member->name }}"
+                        aria-label="Reset password for {{ $member->name }}">
+                        <i class="fa fa-key"></i>
                       </button>
                       <form action="{{ route('staff.destroy', $member) }}" method="POST" class="d-inline js-swal-delete">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-danger" data-title="Remove staff?" data-text="This will remove {{ $member->name }} from your team.">
+                        <button type="submit" class="btn btn-sm btn-danger btn-icon-only"
+                          title="Remove {{ $member->name }}"
+                          aria-label="Remove {{ $member->name }}"
+                          data-title="Remove staff?" data-text="This will remove {{ $member->name }} from your team.">
                           <i class="fa fa-trash"></i>
                         </button>
                       </form>
@@ -162,6 +170,22 @@
 
 @push('styles')
   <style>
+    .staff-list-actions .btn-icon-only {
+      padding: 0.35rem 0.55rem;
+      line-height: 1;
+      vertical-align: middle;
+    }
+
+    .staff-list-actions .btn-icon-only .fa {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .staff-list-actions form {
+      display: inline-block;
+      margin: 0;
+    }
+
     .password-strength__bar {
       height: 6px;
       background: #e9ecef;

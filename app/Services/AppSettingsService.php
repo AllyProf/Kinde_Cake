@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Setting;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 
 class AppSettingsService
 {
@@ -46,6 +47,45 @@ class AppSettingsService
         $color = $this->get('brand_color', $default) ?? $default;
 
         return $this->normalizeHexColor($color) ?? $default;
+    }
+
+    public function panelBackgroundPath(): ?string
+    {
+        $path = $this->get('panel_background_path');
+
+        return filled($path) ? $path : null;
+    }
+
+    public function panelBackgroundDisplay(): string
+    {
+        $mode = $this->get('panel_background_display', 'repeat') ?? 'repeat';
+
+        return in_array($mode, ['cover', 'repeat'], true) ? $mode : 'repeat';
+    }
+
+    public function panelBackgroundUrl(): ?string
+    {
+        $path = $this->panelBackgroundPath();
+
+        if (! $path || ! Storage::disk('public')->exists($path)) {
+            return null;
+        }
+
+        $url = '/storage/'.ltrim(str_replace('\\', '/', $path), '/');
+        $version = Storage::disk('public')->lastModified($path);
+
+        return $url.'?v='.$version;
+    }
+
+    public function deletePanelBackground(): void
+    {
+        $path = $this->panelBackgroundPath();
+
+        if ($path && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
+
+        $this->set('panel_background_path', '');
     }
 
     public function brandColorDark(): string

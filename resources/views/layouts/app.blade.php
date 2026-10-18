@@ -15,8 +15,13 @@
     <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     @stack('styles')
   </head>
-  <body class="app sidebar-mini rtl{{ \App\Models\User::isImpersonating() ? ' is-impersonating' : '' }}">
-    @include('layouts.partials._page-loader')
+  @php
+    $appSettings = app(\App\Services\AppSettingsService::class);
+    $panelBackgroundUrl = $appSettings->panelBackgroundUrl();
+    $panelBackgroundDisplay = $appSettings->panelBackgroundDisplay();
+  @endphp
+  <body class="app sidebar-mini rtl{{ \App\Models\User::isImpersonating() ? ' is-impersonating' : '' }}{{ $panelBackgroundUrl ? ' has-panel-background has-panel-background--'.$panelBackgroundDisplay : '' }}"
+    @if($panelBackgroundUrl) style="--panel-bg-image: url('{{ $panelBackgroundUrl }}');" @endif>
     @include('layouts.partials._header')
     @include('layouts.partials._impersonation-banner')
     @include('layouts.partials._sidebar')
@@ -32,7 +37,6 @@
     <script src="{{ asset('panel-assets/js/plugins/sweetalert.min.js') }}"></script>
     <script src="{{ asset('panel-assets/js/app-alerts.js') }}"></script>
     <script src="{{ asset('panel-assets/js/app-modals.js') }}"></script>
-    <script src="{{ asset('panel-assets/js/app-page-loader.js') }}"></script>
     <script src="{{ asset('panel-assets/js/app-button-loader.js') }}"></script>
     <script src="{{ asset('panel-assets/js/app-mobile.js') }}"></script>
     <script src="{{ asset('panel-assets/js/form-submit-control.js') }}"></script>

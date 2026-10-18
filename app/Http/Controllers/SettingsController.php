@@ -26,6 +26,8 @@ class SettingsController extends Controller
         return view('settings.index', [
             'tab' => $tab,
             'brandColor' => $this->settings->brandColor(),
+            'panelBackgroundUrl' => $this->settings->panelBackgroundUrl(),
+            'panelBackgroundDisplay' => $this->settings->panelBackgroundDisplay(),
             'business' => [
                 'name' => $this->settings->get('business_name', ''),
                 'tagline' => $this->settings->get('business_tagline', ''),
@@ -78,6 +80,9 @@ class SettingsController extends Controller
     {
         $validated = $request->validate([
             'brand_color' => ['required', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
+            'panel_background' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'panel_background_display' => ['nullable', Rule::in(['cover', 'repeat'])],
+            'remove_panel_background' => ['nullable', 'boolean'],
         ]);
 
         $normalized = $this->settings->normalizeHexColor($validated['brand_color']);
@@ -89,6 +94,20 @@ class SettingsController extends Controller
         }
 
         $this->settings->set('brand_color', $normalized);
+        $this->settings->set(
+            'panel_background_display',
+            $validated['panel_background_display'] ?? $this->settings->panelBackgroundDisplay(),
+        );
+
+        if ($request->boolean('remove_panel_background')) {
+            $this->settings->deletePanelBackground();
+        }
+
+        if ($request->hasFile('panel_background')) {
+            $this->settings->deletePanelBackground();
+            $path = $request->file('panel_background')->store('appearance', 'public');
+            $this->settings->set('panel_background_path', $path);
+        }
 
         return redirect()
             ->route('settings.index', ['tab' => 'appearance'])

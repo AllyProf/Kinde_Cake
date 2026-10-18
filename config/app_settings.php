@@ -2,6 +2,7 @@
 
 return [
     'brand_color' => '#7c461f',
+    'panel_background_display' => 'repeat',
     'brand_black' => '#000000',
     'brand_white' => '#ffffff',
     'business_name' => 'Kinde Cake',
