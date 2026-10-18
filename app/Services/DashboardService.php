@@ -18,6 +18,7 @@ class DashboardService
         private DayCloseService $dayClose,
         private DayReportService $dayReport,
         private AppSettingsService $settings,
+        private AppNotificationService $appNotifications,
     ) {}
 
     /** @return array<string, mixed> */
@@ -63,7 +64,7 @@ class DashboardService
             'week_trend' => $weekTrend,
             'payment_methods' => $paymentMethods,
             'stats' => $stats,
-            'alerts' => $this->buildAlerts($user, $today, $stats, $inventory),
+            'alerts' => $this->appNotifications->alerts($user),
             'recent_sales' => $this->recentSales($user),
             'top_debts' => $debtRows
                 ->sortByDesc(fn (Sale $sale) => $sale->debtAmount())
@@ -230,72 +231,4 @@ class DashboardService
             ->get();
     }
 
-    /** @param  array<string, mixed>  $stats
-     * @param  array{low_stock: Collection, out_of_stock: Collection}  $inventory
-     * @return list<array{type: string, message: string, link?: string, label?: string}>
-     */
-    private function buildAlerts(User $user, Carbon $today, array $stats, array $inventory): array
-    {
-        $alerts = [];
-
-        if ($user->canClosePersonalDay() && ! StaffDayClose::query()->where('user_id', $user->id)->whereDate('business_date', $today)->exists()) {
-            if ($this->dayClose->userHasActivity($user, $today)) {
-                $alerts[] = [
-                    'type' => 'warning',
-                    'message' => 'You have activity today. Remember to close your personal day.',
-                    'link' => route('day-closes.index', ['date' => $today->format('Y-m-d')]),
-                    'label' => 'Close day',
-                ];
-            }
-        }
-
-        if ($user->isOwner()) {
-            $pendingStaff = (int) ($stats['pending_staff_count'] ?? 0);
-            if ($pendingStaff > 0) {
-                $alerts[] = [
-                    'type' => 'info',
-                    'message' => $pendingStaff.' staff member(s) still need to close their personal day.',
-                    'link' => route('day-closes.index', ['date' => $today->format('Y-m-d')]),
-                    'label' => 'View close day',
-                ];
-            } elseif (! DayClose::query()->whereDate('business_date', $today)->exists()
-                && $this->dayClose->ownerCanCloseBusinessDay($user, $today)) {
-                $alerts[] = [
-                    'type' => 'success',
-                    'message' => 'You can close the business day for today.',
-                    'link' => route('day-closes.index', ['date' => $today->format('Y-m-d')]),
-                    'label' => 'Close business day',
-                ];
-            }
-        }
-
-        if (($stats['overdue_debts'] ?? 0) > 0 && $user->hasPermission('orders.view')) {
-            $alerts[] = [
-                'type' => 'danger',
-                'message' => $stats['overdue_debts'].' overdue debt(s) need follow-up.',
-                'link' => route('debts.index', ['due' => 'overdue']),
-                'label' => 'View debts',
-            ];
-        }
-
-        if ($user->hasPermission('inventory.view') && ($inventory['out_of_stock']->isNotEmpty() || $inventory['low_stock']->isNotEmpty())) {
-            $alerts[] = [
-                'type' => 'warning',
-                'message' => $inventory['out_of_stock']->count().' out of stock, '.$inventory['low_stock']->count().' low stock ingredient(s).',
-                'link' => route('stock.index'),
-                'label' => 'View stock',
-            ];
-        }
-
-        if (($stats['active_cake_point'] ?? 0) > 0 && $user->hasPermission('orders.view')) {
-            $alerts[] = [
-                'type' => 'info',
-                'message' => $stats['active_cake_point'].' active order(s).',
-                'link' => route('cake-point.index'),
-                'label' => 'Orders',
-            ];
-        }
-
-        return $alerts;
-    }
 }

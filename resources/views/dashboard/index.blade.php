@@ -19,16 +19,6 @@
     </ul>
   </div>
 
-  @foreach($alerts as $alert)
-    <div class="alert alert-{{ $alert['type'] }} mb-3">
-      <i class="fa fa-{{ $alert['type'] === 'danger' ? 'exclamation-circle' : ($alert['type'] === 'success' ? 'check-circle' : 'info-circle') }}"></i>
-      {{ $alert['message'] }}
-      @if(! empty($alert['link']))
-        <a href="{{ $alert['link'] }}" class="alert-link ml-1">{{ $alert['label'] ?? 'View' }}</a>
-      @endif
-    </div>
-  @endforeach
-
   <div class="row dashboard-stat-cards mb-3">
     <div class="col-md-6 col-lg-3">
       @include('partials._stat-card', [

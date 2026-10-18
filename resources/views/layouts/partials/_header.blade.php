@@ -9,31 +9,37 @@
     <li class="dropdown">
       <a class="app-nav__item app-nav__item--notify" href="#" data-toggle="dropdown" aria-label="Show notifications">
         <i class="fa fa-bell-o fa-lg"></i>
-        @if(($cakePointNotificationCount ?? 0) > 0)
-          <span class="app-nav__badge">{{ $cakePointNotificationCount > 9 ? '9+' : $cakePointNotificationCount }}</span>
+        @if(($appNotificationCount ?? 0) > 0)
+          <span class="app-nav__badge">{{ $appNotificationCount > 9 ? '9+' : $appNotificationCount }}</span>
         @endif
       </a>
       <ul class="app-notification dropdown-menu dropdown-menu-right">
         <li class="app-notification__title">
-          @if(($cakePointNotificationCount ?? 0) > 0)
-            You have {{ $cakePointNotificationCount }} new {{ Str::plural('order', $cakePointNotificationCount) }}.
-          @elseif(($cakePointNotifications ?? collect())->isNotEmpty())
-            Recent orders
+          @if(($appNotificationCount ?? 0) > 0)
+            You have {{ $appNotificationCount }} {{ Str::plural('notification', $appNotificationCount) }}.
           @else
             No new notifications.
           @endif
         </li>
         <div class="app-notification__content">
-          @forelse($cakePointNotifications ?? [] as $notification)
+          @forelse($appNotifications ?? [] as $notification)
+            @php
+              $typeColor = match ($notification['type'] ?? 'info') {
+                'danger' => 'text-danger',
+                'warning' => 'text-warning',
+                'success' => 'text-success',
+                default => 'text-info',
+              };
+              $icon = $notification['icon'] ?? 'fa-bell-o';
+            @endphp
             <li>
-              <a class="app-notification__item" href="{{ route('cake-point.index', ['view' => auth()->user()->isOwner() ? 'assigned' : 'mine']) }}">
-                <span class="app-notification__icon fa fa-birthday-cake text-warning"></span>
+              <a class="app-notification__item" href="{{ $notification['link'] ?? route('dashboard') }}">
+                <span class="app-notification__icon fa {{ $icon }} {{ $typeColor }}"></span>
                 <div>
-                  <p class="app-notification__message">
-                    <strong>{{ $notification->sale_number }}</strong>
-                    · {{ $notification->customer_name ?: 'Walk-in' }}
-                  </p>
-                  <p class="app-notification__meta">{{ $notification->itemsSummary() }}</p>
+                  <p class="app-notification__message">{{ $notification['message'] }}</p>
+                  @if(! empty($notification['label']))
+                    <p class="app-notification__meta">{{ $notification['label'] }}</p>
+                  @endif
                 </div>
               </a>
             </li>
@@ -44,9 +50,9 @@
             </li>
           @endforelse
         </div>
-        @if(auth()->user()?->hasPermission('orders.view'))
+        @if(($appNotificationCount ?? 0) > 0)
           <li class="app-notification__footer">
-            <a href="{{ route('cake-point.index') }}">View orders</a>
+            <a href="{{ route('dashboard') }}">Open dashboard</a>
           </li>
         @endif
       </ul>

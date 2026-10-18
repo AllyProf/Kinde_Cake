@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Services\CakePointNotificationService;
+use App\Services\AppNotificationService;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -27,19 +27,18 @@ class AppServiceProvider extends ServiceProvider
         View::composer(['layouts.partials._header', 'layouts.partials._sidebar'], function ($view) {
             if (! auth()->check()) {
                 $view->with([
-                    'cakePointNotificationCount' => 0,
-                    'cakePointNotifications' => collect(),
+                    'appNotificationCount' => 0,
+                    'appNotifications' => [],
                 ]);
 
                 return;
             }
 
-            $service = app(CakePointNotificationService::class);
-            $user = auth()->user();
+            $notifications = app(AppNotificationService::class)->alerts(auth()->user());
 
             $view->with([
-                'cakePointNotificationCount' => $service->unreadCount($user),
-                'cakePointNotifications' => $service->recent($user),
+                'appNotificationCount' => count($notifications),
+                'appNotifications' => $notifications,
             ]);
         });
     }

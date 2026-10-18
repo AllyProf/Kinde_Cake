@@ -50,12 +50,15 @@
 
     {{-- Sales & Orders --}}
     @if($showSalesOrders)
+      @php
+        $cakePointMenuCount = (int) (collect($appNotifications ?? [])->firstWhere('icon', 'fa-birthday-cake')['count'] ?? 0);
+      @endphp
       <li class="treeview {{ $salesOrdersActive ? 'is-expanded' : '' }}">
         <a class="app-menu__item" href="#" data-toggle="treeview">
           <i class="app-menu__icon fa fa-shopping-cart"></i>
           <span class="app-menu__label">Sales & Orders</span>
-          @if(($cakePointNotificationCount ?? 0) > 0)
-            <span class="app-menu__badge">{{ $cakePointNotificationCount > 9 ? '9+' : $cakePointNotificationCount }}</span>
+          @if($cakePointMenuCount > 0)
+            <span class="app-menu__badge">{{ $cakePointMenuCount > 9 ? '9+' : $cakePointMenuCount }}</span>
           @endif
           <i class="treeview-indicator fa fa-angle-right"></i>
         </a>
@@ -68,8 +71,8 @@
           <li>
             <a class="treeview-item {{ request()->routeIs('cake-point.*') ? 'active' : '' }}" href="{{ route('cake-point.index') }}">
               <i class="fa fa-birthday-cake"></i> Orders
-              @if(($cakePointNotificationCount ?? 0) > 0)
-                <span class="badge badge-warning ml-1">{{ $cakePointNotificationCount > 9 ? '9+' : $cakePointNotificationCount }}</span>
+              @if($cakePointMenuCount > 0)
+                <span class="badge badge-warning ml-1">{{ $cakePointMenuCount > 9 ? '9+' : $cakePointMenuCount }}</span>
               @endif
             </a>
           </li>
