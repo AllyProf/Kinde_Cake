@@ -41,7 +41,7 @@ class CakePointService
             ]);
         }
 
-        return DB::transaction(function () use ($owner, $staff, $items, $customerId, $customerName, $customerPhone, $notes, $sendSms) {
+        $sale = DB::transaction(function () use ($owner, $staff, $items, $customerId, $customerName, $customerPhone, $notes) {
             $sale = $this->sales->createCakePointOrder(
                 $owner,
                 $items,
@@ -53,12 +53,14 @@ class CakePointService
 
             $sale->update($this->assignmentPayload($staff, $owner));
 
-            if ($sendSms) {
-                $this->notifyStaff($owner, $sale->fresh(['items.item']), $staff);
-            }
-
-            return $sale->fresh(['assignedTo', 'assignedBy', 'items.item', 'user']);
+            return $sale->fresh(['items.item']);
         });
+
+        if ($sendSms) {
+            $this->notifyStaff($owner, $sale, $staff);
+        }
+
+        return $sale->fresh(['assignedTo', 'assignedBy', 'items.item', 'user']);
     }
 
     public function assign(Sale $sale, User $owner, User $staff, bool $sendSms = false): Sale
@@ -75,17 +77,19 @@ class CakePointService
             ]);
         }
 
-        return DB::transaction(function () use ($sale, $owner, $staff, $sendSms) {
+        $sale = DB::transaction(function () use ($sale, $owner, $staff) {
             $sale = Sale::query()->lockForUpdate()->findOrFail($sale->id);
 
             $sale->update($this->assignmentPayload($staff, $owner));
 
-            if ($sendSms) {
-                $this->notifyStaff($owner, $sale->fresh(['items.item']), $staff);
-            }
-
-            return $sale->fresh(['assignedTo', 'assignedBy', 'items.item', 'user']);
+            return $sale->fresh(['items.item']);
         });
+
+        if ($sendSms) {
+            $this->notifyStaff($owner, $sale, $staff);
+        }
+
+        return $sale->fresh(['assignedTo', 'assignedBy', 'items.item', 'user']);
     }
 
     public function updateStatus(Sale $sale, User $user, string $status): Sale

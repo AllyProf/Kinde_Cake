@@ -149,18 +149,23 @@ class SmsMessageService
         ]);
 
         try {
-            $this->sms->send($message->recipient_phone, $message->message);
+            $providerResponse = $this->sms->send($message->recipient_phone, $message->message);
 
             $message->update([
                 'status' => SmsMessage::STATUS_SENT,
                 'sent_at' => now(),
                 'provider' => $this->sms->currentDriver(),
+                'provider_response' => $providerResponse,
                 'last_error' => null,
             ]);
         } catch (\Throwable $exception) {
+            $error = $exception instanceof ValidationException
+                ? collect($exception->errors())->flatten()->first()
+                : $exception->getMessage();
+
             $message->update([
                 'status' => SmsMessage::STATUS_FAILED,
-                'last_error' => $exception->getMessage(),
+                'last_error' => $error,
             ]);
 
             throw $exception;

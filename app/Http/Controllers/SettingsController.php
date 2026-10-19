@@ -6,7 +6,6 @@ use App\Models\Category;
 use App\Models\PackageUnit;
 use App\Models\PaymentProvider;
 use App\Services\AppSettingsService;
-use App\Services\SmsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -38,10 +37,13 @@ class SettingsController extends Controller
             ],
             'sms' => [
                 'enabled' => $this->settings->get('sms_enabled', '0') === '1',
-                'driver' => $this->settings->get('sms_driver', config('sms.driver', 'beem')),
+                'driver' => $this->settings->get('sms_driver', config('sms.driver', 'mauzo_link')),
                 'api_key' => $this->settings->get('sms_api_key', ''),
                 'secret_key' => $this->settings->get('sms_secret_key', ''),
-                'sender_id' => $this->settings->get('sms_sender_id', ''),
+                'access_token' => $this->settings->get('sms_access_token', ''),
+                'token_from_env' => filled(config('sms.mauzo_link.token'))
+                    && ! filled($this->settings->get('sms_access_token')),
+                'sender_id' => $this->settings->get('sms_sender_id', config('sms.mauzo_link.sender_id', '')),
                 'order_received_template' => $this->settings->get(
                     'sms_cake_point_template',
                     config('sms.defaults.cake_point_template'),
@@ -118,7 +120,8 @@ class SettingsController extends Controller
     {
         $validated = $request->validate([
             'sms_enabled' => ['nullable', 'boolean'],
-            'sms_driver' => ['required', Rule::in(['beem', 'log'])],
+            'sms_driver' => ['required', Rule::in(['mauzo_link', 'beem', 'log'])],
+            'sms_access_token' => ['nullable', 'string', 'max:255'],
             'sms_api_key' => ['nullable', 'string', 'max:255'],
             'sms_secret_key' => ['nullable', 'string', 'max:255'],
             'sms_sender_id' => ['nullable', 'string', 'max:20'],
@@ -127,8 +130,19 @@ class SettingsController extends Controller
 
         $this->settings->set('sms_enabled', $request->boolean('sms_enabled') ? '1' : '0');
         $this->settings->set('sms_driver', $validated['sms_driver']);
-        $this->settings->set('sms_api_key', $validated['sms_api_key'] ?? '');
-        $this->settings->set('sms_secret_key', $validated['sms_secret_key'] ?? '');
+
+        if (filled($validated['sms_access_token'] ?? '')) {
+            $this->settings->set('sms_access_token', $validated['sms_access_token']);
+        }
+
+        if (filled($validated['sms_api_key'] ?? '')) {
+            $this->settings->set('sms_api_key', $validated['sms_api_key']);
+        }
+
+        if (filled($validated['sms_secret_key'] ?? '')) {
+            $this->settings->set('sms_secret_key', $validated['sms_secret_key']);
+        }
+
         $this->settings->set('sms_sender_id', $validated['sms_sender_id'] ?? '');
         $this->settings->set('sms_cake_point_template', $validated['sms_cake_point_template']);
 

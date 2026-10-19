@@ -143,6 +143,8 @@ class CakePointController extends Controller
             ->where('is_active', true)
             ->findOrFail($validated['staff_id']);
 
+        $sale = null;
+
         try {
             $sale = $this->cakePoint->createAndAssign(
                 $request->user(),
@@ -159,10 +161,18 @@ class CakePointController extends Controller
                 $request->boolean('send_sms'),
             );
         } catch (\Illuminate\Validation\ValidationException $exception) {
+            $errors = $exception->errors();
+
+            if (isset($errors['sms']) && isset($sale)) {
+                return redirect()
+                    ->route('cake-point.index', ['view' => 'assigned'])
+                    ->with('warning', "Order {$sale->sale_number} sent to {$staff->name}, but SMS failed: ".collect($errors['sms'])->first());
+            }
+
             return redirect()
                 ->route('cake-point.index')
                 ->withInput()
-                ->with('error', collect($exception->errors())->flatten()->first());
+                ->with('error', collect($errors)->flatten()->first());
         }
 
         $message = "Order {$sale->sale_number} sent to {$staff->name}.";
@@ -199,6 +209,14 @@ class CakePointController extends Controller
                 $request->boolean('send_sms'),
             );
         } catch (\Illuminate\Validation\ValidationException $exception) {
+            $errors = $exception->errors();
+
+            if (isset($errors['sms'])) {
+                return redirect()
+                    ->back()
+                    ->with('warning', "Order {$sale->sale_number} assigned to {$staff->name}, but SMS failed: ".collect($errors['sms'])->first());
+            }
+
             return redirect()
                 ->back()
                 ->with('error', collect($exception->errors())->flatten()->first());
