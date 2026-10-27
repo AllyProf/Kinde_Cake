@@ -11,4 +11,5 @@ return [
     'business_email' => '',
     'business_address' => '',
     'business_city' => '',
+    'sales_require_ingredients' => '1',
 ];

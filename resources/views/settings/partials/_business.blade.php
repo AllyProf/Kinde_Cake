@@ -53,6 +53,23 @@
             @error('business_city')<div class="invalid-feedback">{{ $message }}</div>@enderror
           </div>
 
+          <hr>
+
+          <h5 class="mb-3">Sales</h5>
+          <div class="form-group">
+            <div class="form-check">
+              <label class="form-check-label">
+                <input type="checkbox" class="form-check-input" name="sales_require_ingredients" value="1"
+                  @checked(old('sales_require_ingredients', $business['sales_require_ingredients']))>
+                Require ingredients used when recording a sale
+              </label>
+            </div>
+            <small class="text-muted d-block mt-1">
+              When enabled, staff must enter at least one ingredient on <strong>Sales → New sale</strong> (stock is deducted).
+              When disabled, ingredients are optional and sales can be saved with items only.
+            </small>
+          </div>
+
           <div class="tile-footer px-0 pb-0">
             <button class="btn btn-primary" type="submit">
               <i class="fa fa-check-circle"></i> Save Business Profile

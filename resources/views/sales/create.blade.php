@@ -50,7 +50,12 @@
                 <div class="alert alert-info">
                   <i class="fa fa-birthday-cake"></i>
                   Creating sale from order <strong>{{ $cakePointSale->sale_number }}</strong>.
-                  Customer and items are pre-filled — add ingredients used, then save.
+                  Customer and items are pre-filled
+                  @if($requireIngredients)
+                    — add ingredients used, then save.
+                  @else
+                    — ingredients are optional. Save when ready.
+                  @endif
                 </div>
               @endif
               <input type="hidden" name="customer_id" id="customerIdInput" value="{{ old('customer_id', $saleFormInitial['customer_id'] ?? '') }}">
@@ -81,7 +86,12 @@
               </div>
 
               <div class="d-flex justify-content-between align-items-center mb-2 sale-form-section-head">
-                <h5 class="mb-0">Ingredients used</h5>
+                <h5 class="mb-0">
+                  Ingredients used
+                  @unless($requireIngredients)
+                    <small class="text-muted font-weight-normal">(optional)</small>
+                  @endunless
+                </h5>
                 <button type="button" class="btn btn-sm btn-outline-primary" id="addIngredientRow">
                   <i class="fa fa-plus"></i> Add
                 </button>
@@ -116,7 +126,13 @@
                 </button>
                 <a class="btn btn-secondary" href="{{ route('sales.index') }}">Cancel</a>
               </div>
-              <small class="text-muted d-block mt-2" id="saleSubmitHint">Add at least one item and one ingredient to save.</small>
+              <small class="text-muted d-block mt-2" id="saleSubmitHint">
+                @if($requireIngredients)
+                  Add at least one item and one ingredient to save.
+                @else
+                  Add at least one item to save.
+                @endif
+              </small>
             </form>
           @endif
         </div>
@@ -248,6 +264,7 @@
       items: @json($itemOptions),
       ingredients: @json($ingredientOptions),
       customers: @json($customerOptions),
+      requireIngredients: @json((bool) $requireIngredients),
     };
     window.saleFormInitial = @json($saleFormInitial ?? ['items' => [], 'ingredients' => []]);
   </script>

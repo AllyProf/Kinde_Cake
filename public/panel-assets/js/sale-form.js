@@ -1,7 +1,8 @@
 (function ($) {
   'use strict';
 
-  var data = window.saleFormData || { items: [], ingredients: [], customers: [] };
+  var data = window.saleFormData || { items: [], ingredients: [], customers: [], requireIngredients: true };
+  var requireIngredients = data.requireIngredients !== false;
   var itemIndex = 0;
   var ingredientIndex = 0;
   var refreshSubmitState = null;
@@ -102,7 +103,11 @@
   }
 
   function validateSaleForm() {
-    return hasValidItems() && hasValidIngredients();
+    if (!hasValidItems()) {
+      return false;
+    }
+
+    return requireIngredients ? hasValidIngredients() : true;
   }
 
   function updateSubmitHint() {
@@ -113,7 +118,7 @@
 
     if (!hasValidItems()) {
       $hint.text('Add at least one item to save.');
-    } else if (!hasValidIngredients()) {
+    } else if (requireIngredients && !hasValidIngredients()) {
       $hint.text('Add at least one ingredient used to save.');
     } else {
       $hint.text('');
@@ -239,10 +244,11 @@
   function addIngredientRow(values) {
     values = values || {};
     var idx = ingredientIndex++;
+    var requiredAttr = requireIngredients ? ' required' : '';
     var $row = $(
       '<tr class="sale-form-row">' +
-        '<td data-label="Ingredient"><select class="form-control js-ingredient-select" name="ingredients[' + idx + '][ingredient_id]" required>' + buildIngredientOptions(values.ingredient_id) + '</select></td>' +
-        '<td data-label="Qty used"><input type="number" class="form-control js-ingredient-qty" name="ingredients[' + idx + '][quantity_used]" min="0.0001" step="any" value="' + (values.quantity_used || '') + '" placeholder="0" required></td>' +
+        '<td data-label="Ingredient"><select class="form-control js-ingredient-select" name="ingredients[' + idx + '][ingredient_id]"' + requiredAttr + '>' + buildIngredientOptions(values.ingredient_id) + '</select></td>' +
+        '<td data-label="Qty used"><input type="number" class="form-control js-ingredient-qty" name="ingredients[' + idx + '][quantity_used]" min="0.0001" step="any" value="' + (values.quantity_used || '') + '" placeholder="0"' + requiredAttr + '></td>' +
         '<td data-label="In stock" class="js-ingredient-stock align-middle text-muted">—</td>' +
         '<td class="sale-form-row-actions align-middle" data-label="Remove"><button type="button" class="btn btn-sm btn-danger js-remove-row"><i class="fa fa-trash"></i> Remove</button></td>' +
       '</tr>'

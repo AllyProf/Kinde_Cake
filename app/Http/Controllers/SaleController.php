@@ -8,6 +8,7 @@ use App\Models\Item;
 use App\Models\PaymentProvider;
 use App\Models\Sale;
 use App\Models\User;
+use App\Services\AppSettingsService;
 use App\Services\CakePointService;
 use App\Services\SaleService;
 use App\Services\SmsService;
@@ -22,6 +23,7 @@ class SaleController extends Controller
         private SaleService $sales,
         private SmsService $sms,
         private CakePointService $cakePoint,
+        private AppSettingsService $settings,
     ) {}
 
     public function index(Request $request): View
@@ -131,7 +133,7 @@ class SaleController extends Controller
         $sale = $this->sales->create(
             $request->user(),
             collect($validated['items'])->values()->all(),
-            collect($validated['ingredients'])->values()->all(),
+            $validated['ingredients'],
             isset($validated['customer_id']) ? (int) $validated['customer_id'] : null,
             $validated['customer_name'] ?? null,
             $validated['customer_phone'] ?? null,
@@ -236,7 +238,7 @@ class SaleController extends Controller
         $this->sales->update(
             $sale,
             collect($validated['items'])->values()->all(),
-            collect($validated['ingredients'])->values()->all(),
+            $validated['ingredients'],
             isset($validated['customer_id']) ? (int) $validated['customer_id'] : null,
             $validated['customer_name'] ?? null,
             $validated['customer_phone'] ?? null,
@@ -327,7 +329,9 @@ class SaleController extends Controller
     /** @return array<string, mixed> */
     private function validateSalePayload(Request $request): array
     {
-        return $request->validate([
+        $requireIngredients = $this->salesRequireIngredients();
+
+        $validated = $request->validate([
             'cake_point_sale_id' => ['nullable', 'exists:sales,id'],
             'customer_id' => ['nullable', 'exists:customers,id'],
             'customer_name' => ['nullable', 'string', 'max:255'],
@@ -339,10 +343,56 @@ class SaleController extends Controller
             'items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:999999999.9999'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0', 'max:999999999.99'],
             'items.*.discount' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
-            'ingredients' => ['required', 'array', 'min:1'],
-            'ingredients.*.ingredient_id' => ['required', 'exists:ingredients,id'],
-            'ingredients.*.quantity_used' => ['required', 'numeric', 'gt:0', 'max:999999999.9999'],
+            'ingredients' => $requireIngredients
+                ? ['required', 'array', 'min:1']
+                : ['nullable', 'array'],
+            'ingredients.*.ingredient_id' => ['nullable', 'exists:ingredients,id'],
+            'ingredients.*.quantity_used' => ['nullable', 'numeric', 'gt:0', 'max:999999999.9999'],
         ]);
+
+        $ingredients = $this->normalizedIngredientUsages($validated['ingredients'] ?? []);
+
+        if ($requireIngredients && $ingredients === []) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'ingredients' => 'Add at least one ingredient used for this sale.',
+            ]);
+        }
+
+        foreach ($ingredients as $index => $usage) {
+            if (! isset($usage['ingredient_id']) || ! isset($usage['quantity_used'])) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    "ingredients.{$index}.ingredient_id" => 'Each ingredient row needs an ingredient and quantity used.',
+                ]);
+            }
+        }
+
+        $validated['ingredients'] = $ingredients;
+
+        return $validated;
+    }
+
+    private function salesRequireIngredients(): bool
+    {
+        return $this->settings->get('sales_require_ingredients', '1') === '1';
+    }
+
+    /**
+     * @param  array<int, array{ingredient_id?: mixed, quantity_used?: mixed}>  $usages
+     * @return list<array{ingredient_id: int, quantity_used: float}>
+     */
+    private function normalizedIngredientUsages(array $usages): array
+    {
+        return collect($usages)
+            ->filter(function (array $usage) {
+                return filled($usage['ingredient_id'] ?? null)
+                    && (float) ($usage['quantity_used'] ?? 0) > 0;
+            })
+            ->map(fn (array $usage) => [
+                'ingredient_id' => (int) $usage['ingredient_id'],
+                'quantity_used' => (float) $usage['quantity_used'],
+            ])
+            ->values()
+            ->all();
     }
 
     /** @return array<string, mixed> */
@@ -368,6 +418,7 @@ class SaleController extends Controller
             'items' => $items,
             'ingredients' => $ingredients,
             'customers' => $customers,
+            'requireIngredients' => $this->salesRequireIngredients(),
             'itemOptions' => $items->map(fn (Item $item) => [
                 'id' => $item->id,
                 'name' => $item->name,

@@ -34,6 +34,7 @@ class SettingsController extends Controller
                 'email' => $this->settings->get('business_email', ''),
                 'address' => $this->settings->get('business_address', ''),
                 'city' => $this->settings->get('business_city', ''),
+                'sales_require_ingredients' => $this->settings->get('sales_require_ingredients', '1') === '1',
             ],
             'sms' => [
                 'enabled' => $this->settings->get('sms_enabled', '0') === '1',
@@ -67,11 +68,21 @@ class SettingsController extends Controller
             'business_email' => ['nullable', 'email', 'max:255'],
             'business_address' => ['nullable', 'string', 'max:500'],
             'business_city' => ['nullable', 'string', 'max:120'],
+            'sales_require_ingredients' => ['nullable', 'boolean'],
         ]);
 
         foreach ($validated as $key => $value) {
+            if ($key === 'sales_require_ingredients') {
+                continue;
+            }
+
             $this->settings->set($key, $value);
         }
+
+        $this->settings->set(
+            'sales_require_ingredients',
+            $request->boolean('sales_require_ingredients') ? '1' : '0'
+        );
 
         return redirect()
             ->route('settings.index', ['tab' => 'business'])
