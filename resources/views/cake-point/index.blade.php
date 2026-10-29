@@ -445,8 +445,11 @@
                       @endif
                     </td>
                     <td class="cake-point-actions text-center" data-label="Actions">
-                      @php
-                        $orderDetailPayload = [
+                      <button type="button"
+                        class="btn btn-sm btn-outline-primary js-view-cake-point mb-1"
+                        data-toggle="modal"
+                        data-target="#cakePointViewModal"
+                        data-order="{{ e(json_encode([
                           'sale_number' => $order->sale_number,
                           'ordered_at' => $order->sold_at->format('d M Y H:i'),
                           'ready_at' => $order->ready_at?->format('d M Y H:i'),
@@ -460,23 +463,19 @@
                           'sold_by' => $order->user?->name ?? '—',
                           'assigned_to' => $order->assignedTo?->name ?? '—',
                           'assigned_by' => $order->assignedBy?->name ?? '—',
-                          'items' => $order->items->map(fn ($line) => [
-                            'name' => $line->displayName(),
-                            'quantity' => number_format((float) $line->quantity, 0),
-                            'unit' => $line->item?->packageUnit?->symbol ?? '',
-                            'unit_price' => number_format((float) $line->unit_price, 0).' TZS',
-                            'discount' => (float) $line->discount > 0
-                              ? number_format((float) $line->discount, 0).' TZS'
-                              : '—',
-                            'line_total' => number_format((float) $line->line_total, 0).' TZS',
-                          ])->values()->all(),
-                        ];
-                      @endphp
-                      <button type="button"
-                        class="btn btn-sm btn-outline-primary js-view-cake-point mb-1"
-                        data-toggle="modal"
-                        data-target="#cakePointViewModal"
-                        data-order="{{ e(json_encode($orderDetailPayload)) }}"
+                          'items' => $order->items->map(function ($line) {
+                            return [
+                              'name' => $line->displayName(),
+                              'quantity' => number_format((float) $line->quantity, 0),
+                              'unit' => $line->item?->packageUnit?->symbol ?? '',
+                              'unit_price' => number_format((float) $line->unit_price, 0).' TZS',
+                              'discount' => (float) $line->discount > 0
+                                ? number_format((float) $line->discount, 0).' TZS'
+                                : '—',
+                              'line_total' => number_format((float) $line->line_total, 0).' TZS',
+                            ];
+                          })->values()->all(),
+                        ])) }}"
                         title="View order details">
                         <i class="fa fa-eye"></i>
                       </button>
