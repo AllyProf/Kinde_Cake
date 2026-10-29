@@ -29,40 +29,8 @@
           </p>
         </div>
         <div class="tile-body">
-          @php
-            $hasItemsSearch = filled($filters['search'] ?? '');
-          @endphp
-          <form method="GET" action="{{ route('items.index') }}" class="mb-3">
-            <div class="row align-items-end">
-              <div class="col-12 col-md-6 col-lg-5">
-                <label class="control-label" for="itemsSearchInput">Search</label>
-                <div class="input-group input-group-sm">
-                  <div class="input-group-prepend">
-                    <span class="input-group-text"><i class="fa fa-search"></i></span>
-                  </div>
-                  <input type="search" class="form-control form-control-sm" id="itemsSearchInput" name="search"
-                    value="{{ $filters['search'] ?? '' }}"
-                    placeholder="Item name, category, unit..."
-                    autocomplete="off">
-                </div>
-              </div>
-              <div class="col-6 col-md-3 col-lg-2 mt-2 mt-md-0">
-                <button type="submit" class="btn btn-primary btn-sm btn-block">
-                  <i class="fa fa-search"></i> Search
-                </button>
-              </div>
-              @if($hasItemsSearch)
-                <div class="col-6 col-md-3 col-lg-2 mt-2 mt-md-0">
-                  <a href="{{ route('items.index') }}" class="btn btn-outline-secondary btn-sm btn-block">
-                    <i class="fa fa-times"></i> Clear
-                  </a>
-                </div>
-              @endif
-            </div>
-          </form>
-
           <div class="table-responsive">
-            <table class="table table-hover table-bordered">
+            <table class="table table-hover table-bordered" id="itemsTable" style="width:100%">
               <thead>
                 <tr>
                   <th>#</th>
@@ -78,7 +46,7 @@
               <tbody>
                 @forelse($items as $item)
                   <tr>
-                    <td>{{ $items->firstItem() + $loop->index }}</td>
+                    <td>{{ $loop->iteration }}</td>
                     <td>
                       <strong>{{ $item->name }}</strong>
                       @if($item->description)
@@ -94,7 +62,7 @@
                       @endif
                     </td>
                     <td>{{ $item->packageUnit?->symbol ?? '—' }}</td>
-                    <td><strong>{{ $item->formattedPrice() }}</strong></td>
+                    <td data-order="{{ (float) $item->price }}"><strong>{{ $item->formattedPrice() }}</strong></td>
                     <td>
                       @if($item->is_active)
                         <span class="badge badge-success">Active</span>
@@ -121,18 +89,13 @@
                   </tr>
                 @empty
                   <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
-                      @if($hasItemsSearch)
-                        No items match “{{ $filters['search'] }}”.
-                        <a href="{{ route('items.index') }}">Clear search</a>
-                      @else
-                        No items registered yet.
-                        @if(auth()->user()->hasPermission('catalog.manage'))
-                          <a href="{{ route('items.create') }}">Register your first item</a>
-                          @if(auth()->user()->hasPermission('settings.view'))
-                            or import categories and packages from
-                            <a href="{{ route('settings.index', ['tab' => 'categories']) }}">Settings</a>.
-                          @endif
+                    <td colspan="8" class="text-center text-muted py-4">
+                      No items registered yet.
+                      @if(auth()->user()->hasPermission('catalog.manage'))
+                        <a href="{{ route('items.create') }}">Register your first item</a>
+                        @if(auth()->user()->hasPermission('settings.view'))
+                          or import categories and packages from
+                          <a href="{{ route('settings.index', ['tab' => 'categories']) }}">Settings</a>.
                         @endif
                       @endif
                     </td>
@@ -141,9 +104,39 @@
               </tbody>
             </table>
           </div>
-          {{ $items->links() }}
         </div>
       </div>
     </div>
   </div>
 @endsection
+
+@push('scripts')
+  @if($items->isNotEmpty())
+    <script src="{{ asset('panel-assets/js/plugins/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ asset('panel-assets/js/plugins/dataTables.bootstrap.min.js') }}"></script>
+    <script>
+      (function ($) {
+        $('#itemsTable').DataTable({
+          pageLength: 10,
+          lengthMenu: [10, 25, 50, 100],
+          order: [[0, 'asc']],
+          columnDefs: [
+            { orderable: false, targets: -1 },
+          ],
+          language: {
+            search: 'Search:',
+            lengthMenu: 'Show _MENU_ entries',
+            info: 'Showing _START_ to _END_ of _TOTAL_ items',
+            infoEmpty: 'No items to show',
+            infoFiltered: '(filtered from _MAX_ total items)',
+            zeroRecords: 'No matching items found',
+            paginate: {
+              previous: 'Previous',
+              next: 'Next',
+            },
+          },
+        });
+      })(jQuery);
+    </script>
+  @endif
+@endpush

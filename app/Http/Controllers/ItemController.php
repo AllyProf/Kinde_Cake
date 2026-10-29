@@ -12,34 +12,15 @@ use Illuminate\View\View;
 
 class ItemController extends Controller
 {
-    public function index(Request $request): View
+    public function index(): View
     {
-        $filters = $request->validate([
-            'search' => ['nullable', 'string', 'max:120'],
-        ]);
-
-        $search = trim((string) ($filters['search'] ?? ''));
-
         $items = Item::query()
             ->with(['category', 'packageUnit'])
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($builder) use ($search) {
-                    $builder->where('name', 'like', "%{$search}%")
-                        ->orWhere('description', 'like', "%{$search}%")
-                        ->orWhereHas('category', fn ($categoryQuery) => $categoryQuery->where('name', 'like', "%{$search}%"))
-                        ->orWhereHas('packageUnit', fn ($unitQuery) => $unitQuery->where('name', 'like', "%{$search}%")
-                            ->orWhere('symbol', 'like', "%{$search}%"));
-                });
-            })
             ->latest()
-            ->paginate(10)
-            ->withQueryString();
+            ->get();
 
         return view('items.index', [
             'items' => $items,
-            'filters' => [
-                'search' => $search,
-            ],
         ]);
     }
 
