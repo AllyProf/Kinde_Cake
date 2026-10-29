@@ -40,15 +40,18 @@ class NotebookCatalogSeeder extends Seeder
             $category = $categories[$row['category']];
             $unit = $units[$row['unit']];
 
+            $isCustom = (bool) ($row['is_custom'] ?? false);
+
             Item::updateOrCreate(
                 ['name' => $row['name']],
                 [
                     'category_id' => $category->id,
                     'package_unit_id' => $unit->id,
-                    'price' => $row['price'],
-                    'sale_type' => ($row['category'] ?? '') === 'cakes'
+                    'price' => $isCustom ? 0 : $row['price'],
+                    'sale_type' => $isCustom || ($row['category'] ?? '') === 'cakes'
                         ? Item::SALE_TYPE_ORDER
                         : Item::SALE_TYPE_RETAIL,
+                    'is_custom' => $isCustom,
                     'description' => $row['description'] ?? null,
                     'is_active' => true,
                 ]
@@ -142,6 +145,16 @@ class NotebookCatalogSeeder extends Seeder
             ['name' => 'Plates + Cup', 'category' => 'accessories', 'unit' => 'pack', 'price' => 10000],
             ['name' => 'Pipi toys', 'category' => 'accessories', 'unit' => 'pcs', 'price' => 15000],
             ['name' => 'Tik Tok', 'category' => 'accessories', 'unit' => 'pcs', 'price' => 12000],
+
+            // Custom order template (name + price set on each sale)
+            [
+                'name' => 'Custom Cake',
+                'category' => 'cakes',
+                'unit' => 'pcs',
+                'price' => 0,
+                'is_custom' => true,
+                'description' => 'Custom cake — enter customer cake name and price on the sale',
+            ],
         ];
     }
 

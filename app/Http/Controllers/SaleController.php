@@ -118,6 +118,7 @@ class SaleController extends Controller
                 'existing_advance' => (float) $cakePointSale->amount_paid,
                 'items' => $cakePointSale->items->map(fn ($line) => [
                     'item_id' => $line->item_id,
+                    'item_name' => $line->item_name,
                     'quantity' => (float) $line->quantity,
                     'unit_price' => (float) $line->unit_price,
                     'discount' => (float) $line->discount,
@@ -306,6 +307,7 @@ class SaleController extends Controller
             'sale' => $sale,
             'initialItems' => $sale->items->map(fn ($line) => [
                 'item_id' => $line->item_id,
+                'item_name' => $line->item_name,
                 'quantity' => (float) $line->quantity,
                 'unit_price' => (float) $line->unit_price,
                 'discount' => (float) $line->discount,
@@ -455,6 +457,7 @@ class SaleController extends Controller
             'send_customer_sms' => ['nullable', 'boolean'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.item_id' => ['required', 'exists:items,id'],
+            'items.*.item_name' => ['nullable', 'string', 'max:255'],
             'items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:999999999.9999'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0', 'max:999999999.99'],
             'items.*.discount' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
@@ -595,6 +598,7 @@ class SaleController extends Controller
                 'price' => (float) $item->price,
                 'unit' => $item->packageUnit?->symbol,
                 'sale_type' => $item->sale_type ?: Item::SALE_TYPE_RETAIL,
+                'is_custom' => (bool) $item->is_custom,
             ])->values(),
             'ingredientOptions' => $ingredients->map(fn (Ingredient $ingredient) => [
                 'id' => $ingredient->id,

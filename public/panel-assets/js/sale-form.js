@@ -73,18 +73,39 @@
 
   function hasValidItems() {
     var valid = false;
+    var invalid = false;
 
     $('#saleItemsBody tr').each(function () {
-      var itemId = $(this).find('.js-item-select').val();
-      var qty = parseFloat($(this).find('.js-item-qty').val()) || 0;
-      var price = parseFloat($(this).find('.js-item-price-input').val()) || 0;
-
-      if (itemId && qty > 0 && price >= 0) {
-        valid = true;
+      var $row = $(this);
+      var itemId = $row.find('.js-item-select').val();
+      if (!itemId) {
+        return;
       }
+
+      var item = itemById(itemId);
+      var qty = parseFloat($row.find('.js-item-qty').val()) || 0;
+      var price = parseFloat($row.find('.js-item-price-input').val()) || 0;
+      var customName = ($row.find('.js-custom-item-name').val() || '').trim();
+
+      if (qty <= 0) {
+        invalid = true;
+        return;
+      }
+
+      if (item && item.is_custom) {
+        if (!customName || price <= 0) {
+          invalid = true;
+          return;
+        }
+      } else if (price < 0) {
+        invalid = true;
+        return;
+      }
+
+      valid = true;
     });
 
-    return valid;
+    return valid && !invalid;
   }
 
   function hasValidIngredients() {
@@ -207,7 +228,23 @@
           : 'Customer name and phone are required when amount paid is less than the total.'
       );
     } else if (!hasValidItems()) {
-      $hint.text('Add at least one item to save.');
+      var needsCustomDetails = false;
+      $('#saleItemsBody tr').each(function () {
+        var item = itemById($(this).find('.js-item-select').val());
+        if (item && item.is_custom) {
+          var name = ($(this).find('.js-custom-item-name').val() || '').trim();
+          var price = parseFloat($(this).find('.js-item-price-input').val()) || 0;
+          if (!name || price <= 0) {
+            needsCustomDetails = true;
+            return false;
+          }
+        }
+      });
+      $hint.text(
+        needsCustomDetails
+          ? 'Enter the custom cake name and price before saving.'
+          : 'Add at least one item to save.'
+      );
     } else if (requireIngredients && !hasValidIngredients()) {
       $hint.text('Add at least one ingredient used to save.');
     } else {
@@ -220,8 +257,11 @@
     var price = parseFloat($row.find('.js-item-price-input').val()) || 0;
     var discount = parseFloat($row.find('.js-item-discount').val()) || 0;
     var total = lineTotal(qty, price, discount);
+    var item = itemById($row.find('.js-item-select').val());
 
-    $row.find('.js-item-price-display').text(formatMoney(price));
+    if (!(item && item.is_custom)) {
+      $row.find('.js-item-price-display').text(formatMoney(price));
+    }
     $row.find('.js-item-total').text(formatMoney(total));
     updateGrandTotal();
 
@@ -300,17 +340,69 @@
     }
   }
 
+  function syncCustomItemFields($row, values) {
+    values = values || {};
+    var item = itemById($row.find('.js-item-select').val());
+    var isCustom = !!(item && item.is_custom);
+    var $nameWrap = $row.find('.js-custom-name-wrap');
+    var $nameInput = $row.find('.js-custom-item-name');
+    var $priceDisplay = $row.find('.js-item-price-display');
+    var $priceInput = $row.find('.js-item-price-input');
+
+    $nameWrap.toggleClass('d-none', !isCustom);
+    $nameInput.prop('disabled', !isCustom);
+    if (!isCustom) {
+      $nameInput.val('');
+    } else if (values.item_name) {
+      $nameInput.val(values.item_name);
+    }
+
+    if (isCustom) {
+      $priceDisplay.addClass('d-none');
+      $priceInput
+        .attr({ type: 'text', inputmode: 'numeric', placeholder: 'Enter price' })
+        .addClass('form-control')
+        .removeClass('d-none')
+        .prop('readonly', false);
+      if (values.unit_price !== undefined && values.unit_price !== null && values.unit_price !== '') {
+        $priceInput.val(values.unit_price);
+      } else if (!$priceInput.val() || parseFloat($priceInput.val()) === 0) {
+        $priceInput.val('');
+      }
+    } else {
+      $priceDisplay.removeClass('d-none');
+      $priceInput
+        .attr({ type: 'hidden', placeholder: '' })
+        .removeClass('form-control')
+        .addClass('d-none')
+        .prop('readonly', true);
+      if (item) {
+        $priceInput.val(values.unit_price !== undefined && values.unit_price !== null ? values.unit_price : item.price);
+      } else {
+        $priceInput.val(0);
+      }
+    }
+  }
+
   function addItemRow(values) {
     values = values || {};
     var idx = itemIndex++;
     var $row = $(
       '<tr class="sale-form-row">' +
-        '<td data-label="Item"><select class="form-control js-item-select" name="items[' + idx + '][item_id]" required>' + buildItemOptions(values.item_id) + '</select></td>' +
-        '<td data-label="Qty"><input type="number" class="form-control js-item-qty" name="items[' + idx + '][quantity]" min="0.0001" step="any" value="' + (values.quantity || 1) + '" required></td>' +
-        '<td data-label="Price" class="align-middle"><span class="js-item-price-display">0 TZS</span><input type="hidden" class="js-item-price-input" name="items[' + idx + '][unit_price]" value="' + (values.unit_price || 0) + '"></td>' +
-        '<td data-label="Discount"><input type="number" class="form-control js-item-discount" name="items[' + idx + '][discount]" min="0" step="1" value="' + (values.discount || 0) + '"></td>' +
-        '<td data-label="Total" class="js-item-total align-middle"><strong>0 TZS</strong></td>' +
-        '<td class="sale-form-row-actions align-middle" data-label="Remove"><button type="button" class="btn btn-sm btn-danger js-remove-row"><i class="fa fa-trash"></i> Remove</button></td>' +
+        '<td data-label="Item">' +
+          '<select class="form-control js-item-select" name="items[' + idx + '][item_id]" required>' + buildItemOptions(values.item_id) + '</select>' +
+          '<div class="js-custom-name-wrap mt-1 d-none">' +
+            '<input type="text" class="form-control form-control-sm js-custom-item-name" name="items[' + idx + '][item_name]" maxlength="255" placeholder="Custom cake name" disabled>' +
+          '</div>' +
+        '</td>' +
+        '<td data-label="Qty" class="align-top"><input type="number" class="form-control js-item-qty" name="items[' + idx + '][quantity]" min="0.0001" step="any" value="' + (values.quantity || 1) + '" required></td>' +
+        '<td data-label="Price" class="align-top sale-form-price-cell">' +
+          '<span class="js-item-price-display">0 TZS</span>' +
+          '<input type="hidden" class="form-control js-item-price-input d-none" name="items[' + idx + '][unit_price]" value="' + (values.unit_price || 0) + '" inputmode="numeric" autocomplete="off">' +
+        '</td>' +
+        '<td data-label="Discount" class="align-top"><input type="number" class="form-control js-item-discount" name="items[' + idx + '][discount]" min="0" step="1" value="' + (values.discount || 0) + '"></td>' +
+        '<td data-label="Total" class="js-item-total align-top"><strong>0 TZS</strong></td>' +
+        '<td class="sale-form-row-actions align-top" data-label="Remove"><button type="button" class="btn btn-sm btn-danger js-remove-row"><i class="fa fa-trash"></i> Remove</button></td>' +
       '</tr>'
     );
 
@@ -319,23 +411,12 @@
     initSelect2($select, 'Search item', $(document.body));
 
     $select.on('change', function () {
-      var item = itemById($(this).val());
-      if (item) {
-        $row.find('.js-item-price-input').val(item.price);
-      } else {
-        $row.find('.js-item-price-input').val(0);
-      }
+      syncCustomItemFields($row);
       updateItemRow($row);
       syncSaleModeUi();
     });
 
-    if (values.item_id) {
-      var item = itemById(values.item_id);
-      if (item) {
-        $row.find('.js-item-price-input').val(values.unit_price ?? item.price);
-      }
-    }
-
+    syncCustomItemFields($row, values);
     updateItemRow($row);
   }
 
@@ -455,7 +536,7 @@
       }
     });
 
-    $('#saleItemsBody').on('input', '.js-item-qty, .js-item-discount', function () {
+    $('#saleItemsBody').on('input', '.js-item-qty, .js-item-discount, .js-item-price-input, .js-custom-item-name', function () {
       updateItemRow($(this).closest('tr'));
     });
 

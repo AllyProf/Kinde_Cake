@@ -452,8 +452,9 @@ class SaleService
         }
     }
 
-    /** @param array<int, array{item_id: int, quantity: float, unit_price: float, discount?: float}> $items
-     * @return list<array{item_id: int, quantity: float, unit_price: float, discount: float, line_total: float}>
+    /**
+     * @param  array<int, array{item_id: int, quantity: float, unit_price: float, discount?: float, item_name?: string|null}>  $items
+     * @return list<array{item_id: int, item_name: string|null, quantity: float, unit_price: float, discount: float, line_total: float}>
      */
     private function buildSaleItems(array $items): array
     {
@@ -471,11 +472,30 @@ class SaleService
             $quantity = (float) $row['quantity'];
             $unitPrice = (float) $row['unit_price'];
             $discount = max(0, (float) ($row['discount'] ?? 0));
+            $customName = filled($row['item_name'] ?? null) ? trim((string) $row['item_name']) : null;
+
+            if ($item->is_custom) {
+                if (! filled($customName)) {
+                    throw ValidationException::withMessages([
+                        'items' => 'Enter the custom cake / item name for each custom order line.',
+                    ]);
+                }
+
+                if ($unitPrice <= 0) {
+                    throw ValidationException::withMessages([
+                        'items' => "Enter a price for “{$customName}”.",
+                    ]);
+                }
+            } else {
+                $customName = null;
+            }
+
             $lineSubtotal = round($quantity * $unitPrice, 2);
+            $label = $customName ?: $item->name;
 
             if ($discount > $lineSubtotal) {
                 throw ValidationException::withMessages([
-                    'items' => "Discount for {$item->name} cannot exceed the line total.",
+                    'items' => "Discount for {$label} cannot exceed the line total.",
                 ]);
             }
 
@@ -483,6 +503,7 @@ class SaleService
 
             $rows[] = [
                 'item_id' => $item->id,
+                'item_name' => $customName,
                 'quantity' => $quantity,
                 'unit_price' => $unitPrice,
                 'discount' => $discount,

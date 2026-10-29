@@ -55,7 +55,9 @@
                     </td>
                     <td>{{ $item->category?->name ?? '—' }}</td>
                     <td>
-                      @if($item->isOrderType())
+                      @if($item->isCustom())
+                        <span class="badge badge-warning">Custom</span>
+                      @elseif($item->isOrderType())
                         <span class="badge badge-info">Order</span>
                       @else
                         <span class="badge badge-secondary">Retail</span>

@@ -33,12 +33,15 @@ class ItemController extends Controller
     {
         $validated = $this->validateItem($request);
 
+        $isCustom = $request->boolean('is_custom');
+
         Item::create([
             'name' => $validated['name'],
             'category_id' => $validated['category_id'],
             'package_unit_id' => $validated['package_unit_id'],
-            'price' => $validated['price'],
-            'sale_type' => $validated['sale_type'],
+            'price' => $isCustom ? 0 : $validated['price'],
+            'sale_type' => $isCustom ? Item::SALE_TYPE_ORDER : $validated['sale_type'],
+            'is_custom' => $isCustom,
             'description' => $validated['description'] ?? null,
             'is_active' => $request->boolean('is_active', true),
         ]);
@@ -57,12 +60,15 @@ class ItemController extends Controller
     {
         $validated = $this->validateItem($request, $item);
 
+        $isCustom = $request->boolean('is_custom');
+
         $item->update([
             'name' => $validated['name'],
             'category_id' => $validated['category_id'],
             'package_unit_id' => $validated['package_unit_id'],
-            'price' => $validated['price'],
-            'sale_type' => $validated['sale_type'],
+            'price' => $isCustom ? 0 : $validated['price'],
+            'sale_type' => $isCustom ? Item::SALE_TYPE_ORDER : $validated['sale_type'],
+            'is_custom' => $isCustom,
             'description' => $validated['description'] ?? null,
             'is_active' => $request->boolean('is_active', true),
         ]);
@@ -93,6 +99,8 @@ class ItemController extends Controller
     /** @return array<string, mixed> */
     private function validateItem(Request $request, ?Item $item = null): array
     {
+        $isCustom = $request->boolean('is_custom');
+
         return $request->validate([
             'name' => [
                 'required',
@@ -108,8 +116,8 @@ class ItemController extends Controller
                 'required',
                 Rule::exists('package_units', 'id')->where(fn ($query) => $query->where('is_active', true)),
             ],
-            'price' => ['required', 'numeric', 'min:0', 'max:999999999.99'],
-            'sale_type' => ['required', Rule::in(array_keys(Item::saleTypeOptions()))],
+            'price' => [$isCustom ? 'nullable' : 'required', 'numeric', 'min:0', 'max:999999999.99'],
+            'sale_type' => [$isCustom ? 'nullable' : 'required', Rule::in(array_keys(Item::saleTypeOptions()))],
             'description' => ['nullable', 'string', 'max:1000'],
         ]);
     }

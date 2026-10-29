@@ -41,25 +41,25 @@
       @error('package_unit_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
   </div>
-  <div class="col-md-6">
+  <div class="col-md-6" id="itemPriceField">
     <div class="form-group">
-      <label class="control-label">Price (TZS) <span class="text-danger">*</span></label>
+      <label class="control-label">Price (TZS) <span class="text-danger js-price-required">*</span></label>
       <div class="input-group">
         <div class="input-group-prepend">
           <span class="input-group-text">TZS</span>
         </div>
-        <input type="number" class="form-control @error('price') is-invalid @enderror" name="price"
-          value="{{ old('price', $record->price ?? '') }}" required min="0" step="1"
+        <input type="number" class="form-control @error('price') is-invalid @enderror" name="price" id="itemPriceInput"
+          value="{{ old('price', $record->price ?? '') }}" min="0" step="1"
           placeholder="e.g. 25000">
       </div>
       @error('price')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
       <small class="text-muted">Price per selected unit (e.g. per kg, per piece)</small>
     </div>
   </div>
-  <div class="col-md-6">
+  <div class="col-md-6" id="itemSaleTypeField">
     <div class="form-group">
       <label class="control-label">Sale type <span class="text-danger">*</span></label>
-      <select class="form-control @error('sale_type') is-invalid @enderror" name="sale_type" required>
+      <select class="form-control @error('sale_type') is-invalid @enderror" name="sale_type" id="itemSaleTypeInput">
         @foreach(\App\Models\Item::saleTypeOptions() as $value => $label)
           <option value="{{ $value }}" @selected(old('sale_type', $record->sale_type ?? \App\Models\Item::SALE_TYPE_RETAIL) === $value)>
             {{ $label }}
@@ -79,6 +79,15 @@
     </div>
   </div>
   <div class="col-md-12">
+    <div class="form-group">
+      <label class="mb-0">
+        <input type="checkbox" name="is_custom" id="itemIsCustom" value="1" {{ old('is_custom', $record->is_custom ?? false) ? 'checked' : '' }}>
+        Custom order — name and price are entered on each sale
+      </label>
+      <small class="text-muted d-block">Use for custom cakes. Catalog name is the template (e.g. “Custom Cake”); staff set the real cake name and price when selling.</small>
+    </div>
+  </div>
+  <div class="col-md-12">
     <div class="form-group mb-0">
       <label class="mb-0">
         <input type="checkbox" name="is_active" value="1" {{ old('is_active', $record->is_active ?? true) ? 'checked' : '' }}>
@@ -87,3 +96,38 @@
     </div>
   </div>
 </div>
+
+@once
+  @push('scripts')
+    <script>
+      (function () {
+        var checkbox = document.getElementById('itemIsCustom');
+        var priceInput = document.getElementById('itemPriceInput');
+        var priceRequired = document.querySelector('.js-price-required');
+        var saleTypeInput = document.getElementById('itemSaleTypeInput');
+        if (!checkbox || !priceInput) {
+          return;
+        }
+
+        function syncCustomMode() {
+          var custom = checkbox.checked;
+          priceInput.required = !custom;
+          priceInput.disabled = custom;
+          if (priceRequired) {
+            priceRequired.classList.toggle('d-none', custom);
+          }
+          if (saleTypeInput) {
+            saleTypeInput.required = !custom;
+            saleTypeInput.disabled = custom;
+            if (custom) {
+              saleTypeInput.value = 'order';
+            }
+          }
+        }
+
+        checkbox.addEventListener('change', syncCustomMode);
+        syncCustomMode();
+      })();
+    </script>
+  @endpush
+@endonce

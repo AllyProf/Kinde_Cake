@@ -219,8 +219,24 @@
       width: 100% !important;
     }
 
+    #saleItemsTable td.align-top {
+      vertical-align: top;
+    }
+
+    #saleItemsTable .sale-form-price-cell .js-item-price-display {
+      display: inline-block;
+      min-height: calc(1.5em + 0.75rem + 2px);
+      line-height: calc(1.5em + 0.75rem + 2px);
+    }
+
+    #saleItemsTable .sale-form-price-cell .js-item-price-input.form-control {
+      width: 100%;
+      min-width: 0;
+    }
+
     #saleItemsTable .js-item-qty,
-    #saleItemsTable .js-item-discount {
+    #saleItemsTable .js-item-discount,
+    #saleItemsTable .js-item-price-input {
       -moz-appearance: textfield;
       appearance: textfield;
     }
@@ -228,7 +244,9 @@
     #saleItemsTable .js-item-qty::-webkit-inner-spin-button,
     #saleItemsTable .js-item-qty::-webkit-outer-spin-button,
     #saleItemsTable .js-item-discount::-webkit-inner-spin-button,
-    #saleItemsTable .js-item-discount::-webkit-outer-spin-button {
+    #saleItemsTable .js-item-discount::-webkit-outer-spin-button,
+    #saleItemsTable .js-item-price-input::-webkit-inner-spin-button,
+    #saleItemsTable .js-item-price-input::-webkit-outer-spin-button {
       -webkit-appearance: none;
       margin: 0;
     }

@@ -137,7 +137,7 @@
               <tbody>
                 @foreach($sale->items as $line)
                   <tr>
-                    <td data-label="Item">{{ $line->item?->name ?? '—' }}</td>
+                    <td data-label="Item">{{ $line->displayName() }}</td>
                     <td data-label="Qty">{{ number_format((float) $line->quantity, 0) }} {{ $line->item?->packageUnit?->symbol }}</td>
                     <td data-label="Price">{{ number_format((float) $line->unit_price, 0) }} TZS</td>
                     <td data-label="Discount">

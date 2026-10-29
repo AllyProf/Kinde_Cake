@@ -500,7 +500,7 @@ class Sale extends Model
     {
         return $this->items
             ->map(function (SaleItem $line) {
-                $name = $line->item?->name ?? 'Item';
+                $name = $line->displayName();
                 $qty = number_format((float) $line->quantity, 0);
 
                 return "{$name} x{$qty}";

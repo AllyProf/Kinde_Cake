@@ -12,6 +12,7 @@ class SaleItem extends Model
     protected $fillable = [
         'sale_id',
         'item_id',
+        'item_name',
         'quantity',
         'unit_price',
         'discount',
@@ -36,5 +37,14 @@ class SaleItem extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
+    }
+
+    public function displayName(): string
+    {
+        if (filled($this->item_name)) {
+            return (string) $this->item_name;
+        }
+
+        return $this->item?->name ?? 'Item';
     }
 }
