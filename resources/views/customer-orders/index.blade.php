@@ -141,6 +141,7 @@
                   <th class="d-none d-md-table-cell">#</th>
                   <th>Customer</th>
                   <th>Order</th>
+                  <th>Ordered by</th>
                   <th>Collect / ready</th>
                   <th>Total</th>
                   <th>Payment</th>
@@ -156,7 +157,7 @@
                     $isToday = $sale->ready_at && $sale->ready_at->isToday();
                   @endphp
                   <tr class="js-customer-order-row {{ $isOverdue ? 'customer-order-row--overdue' : '' }} {{ $isToday ? 'customer-order-row--today' : '' }}"
-                    data-search="{{ strtolower($sale->sale_number.' '.$sale->customer_name.' '.$sale->customer_phone.' '.$sale->itemsSummary().' '.($sale->notes ?? '')) }}">
+                    data-search="{{ strtolower($sale->sale_number.' '.$sale->customer_name.' '.$sale->customer_phone.' '.$sale->itemsSummary().' '.($sale->notes ?? '').' '.($sale->assignedBy?->name ?? '').' '.($sale->user?->name ?? '')) }}">
                     <td class="d-none d-md-table-cell" data-label="#">{{ $orders->firstItem() + $loop->index }}</td>
                     <td data-label="Customer">
                       <strong>{{ $sale->customer_name }}</strong>
@@ -168,6 +169,15 @@
                       <a href="{{ route('sales.show', $sale) }}">{{ $sale->sale_number }}</a>
                       <br><span class="sale-items-summary">{{ $sale->itemsSummary() ?: '—' }}</span>
                       <br><small class="text-muted">Ordered {{ $sale->sold_at->format('d M Y H:i') }}</small>
+                      @if($sale->isCakePointWorkOrder())
+                        <br><span class="badge {{ $sale->cakePointStatusBadgeClass() }}">{{ $sale->cakePointStatusLabel() }}</span>
+                      @endif
+                    </td>
+                    <td data-label="Ordered by">
+                      <strong>{{ $sale->assignedBy?->name ?? $sale->user?->name ?? '—' }}</strong>
+                      @if($sale->assignedTo)
+                        <br><small class="text-muted">Staff: {{ $sale->assignedTo->name }}</small>
+                      @endif
                     </td>
                     <td data-label="Collect / ready">
                       @if($sale->ready_at)
@@ -245,7 +255,7 @@
                   </tr>
                 @empty
                   <tr id="customerOrdersEmptyRow">
-                    <td colspan="7" class="text-center text-muted py-4">
+                    <td colspan="8" class="text-center text-muted py-4">
                       @if($hasFilters)
                         No customer orders match your filters.
                         <a href="{{ route('customer-orders.index') }}">Clear filters</a>.
@@ -259,7 +269,7 @@
                   </tr>
                 @endforelse
                 <tr id="customerOrdersNoMatchRow" class="d-none">
-                  <td colspan="7" class="text-center text-muted py-4">No orders match your search on this page.</td>
+                  <td colspan="8" class="text-center text-muted py-4">No orders match your search on this page.</td>
                 </tr>
               </tbody>
             </table>

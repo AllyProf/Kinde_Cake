@@ -35,7 +35,7 @@ class CustomerOrderController extends Controller
         ]));
 
         $query = $this->baseOrdersQuery($request)
-            ->with(['user', 'items.item', 'paymentProvider', 'payments'])
+            ->with(['user', 'assignedBy', 'assignedTo', 'items.item', 'paymentProvider', 'payments'])
             ->orderByRaw('CASE WHEN ready_at IS NULL THEN 1 ELSE 0 END')
             ->orderBy('ready_at')
             ->latest('sold_at')
@@ -48,7 +48,10 @@ class CustomerOrderController extends Controller
                     ->orWhere('customer_name', 'like', "%{$search}%")
                     ->orWhere('customer_phone', 'like', "%{$search}%")
                     ->orWhere('notes', 'like', "%{$search}%")
-                    ->orWhereHas('items.item', fn ($itemQuery) => $itemQuery->where('name', 'like', "%{$search}%"));
+                    ->orWhereHas('items', fn ($itemQuery) => $itemQuery->where('item_name', 'like', "%{$search}%"))
+                    ->orWhereHas('items.item', fn ($itemQuery) => $itemQuery->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('assignedBy', fn ($userQuery) => $userQuery->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', "%{$search}%"));
             });
         }
 
@@ -190,9 +193,20 @@ class CustomerOrderController extends Controller
     private function baseOrdersQuery(Request $request): Builder
     {
         $query = Sale::query()
-            ->realSales()
-            ->whereNotNull('customer_name')
-            ->where('customer_name', '!=', '')
+            ->where(function (Builder $builder) {
+                $builder->where(function (Builder $realSales) {
+                    $realSales->whereNull('cake_point_status')
+                        ->whereNotNull('customer_name')
+                        ->where('customer_name', '!=', '');
+                })->orWhere(function (Builder $cakePointOrders) {
+                    $cakePointOrders->whereIn('cake_point_status', [
+                        Sale::CAKE_POINT_RECEIVED,
+                        Sale::CAKE_POINT_PREPARED,
+                    ])
+                        ->whereNotNull('customer_name')
+                        ->where('customer_name', '!=', '');
+                });
+            })
             ->whereNotIn('status', [Sale::STATUS_CANCELLED, Sale::STATUS_DELETED]);
 
         if (! $request->user()->isOwner() && ! $request->user()->canPaySales()) {

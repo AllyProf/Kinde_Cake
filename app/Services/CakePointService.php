@@ -98,6 +98,7 @@ class CakePointService
 
         if ($sendSms) {
             $this->notifyStaff($owner, $sale, $staff);
+            $this->notifyCustomer($owner, $sale);
         }
 
         return $sale->fresh(['assignedTo', 'assignedBy', 'items.item', 'user', 'payments']);
@@ -172,6 +173,7 @@ class CakePointService
 
         if ($sendSms) {
             $this->notifyStaff($owner, $sale, $staff);
+            $this->notifyCustomer($owner, $sale);
         }
 
         return $sale->fresh(['assignedTo', 'assignedBy', 'items.item', 'user']);
@@ -281,5 +283,34 @@ class CakePointService
         if ($smsMessage->status === SmsMessage::STATUS_SENT) {
             $sale->update(['assignment_sms_sent_at' => now()]);
         }
+    }
+
+    private function notifyCustomer(User $sender, Sale $sale): void
+    {
+        if (! filled($sale->customer_phone)) {
+            return;
+        }
+
+        if (! $this->sms->isReady()) {
+            throw ValidationException::withMessages([
+                'sms' => 'SMS is not enabled or configured. Set it up in Settings → SMS, or uncheck notify by phone.',
+            ]);
+        }
+
+        $sale->loadMissing(['items.item']);
+        $message = $this->sms->buildSaleConfirmationMessage($sale);
+
+        $this->smsMessages->create(
+            $sender,
+            $sale->customer_phone,
+            $message,
+            $sale->customer_name,
+            null,
+            SmsMessage::TYPE_SALE_CONFIRMATION,
+            SmsMessage::RECIPIENT_CUSTOMER,
+            $sale->customer_id,
+            $sale,
+            true,
+        );
     }
 }

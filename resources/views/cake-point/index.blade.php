@@ -59,12 +59,33 @@
                       <select class="form-control @error('item_id') is-invalid @enderror" id="cakePointItemId" name="item_id" required>
                         <option value="">Select cake...</option>
                         @foreach($items as $item)
-                          <option value="{{ $item->id }}" data-price="{{ $item->price }}" @selected(old('item_id') == $item->id)>
+                          <option value="{{ $item->id }}"
+                            data-price="{{ $item->is_custom ? '' : $item->price }}"
+                            data-is-custom="{{ $item->is_custom ? '1' : '0' }}"
+                            @selected(old('item_id') == $item->id)>
                             {{ $item->name }} · {{ $item->formattedPrice() }}
                           </option>
                         @endforeach
                       </select>
                       @error('item_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                  </div>
+                  <div class="col-12 col-lg-4 col-md-6 js-cake-point-custom-fields d-none">
+                    <div class="form-group">
+                      <label class="control-label" for="cakePointItemName">Custom cake name <span class="text-danger">*</span></label>
+                      <input type="text" class="form-control @error('item_name') is-invalid @enderror" id="cakePointItemName"
+                        name="item_name" maxlength="255" value="{{ old('item_name') }}"
+                        placeholder="e.g. Red velvet 2kg — Happy birthday Amina" disabled>
+                      @error('item_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                  </div>
+                  <div class="col-12 col-sm-6 col-lg-2 col-md-6 js-cake-point-custom-fields d-none">
+                    <div class="form-group">
+                      <label class="control-label" for="cakePointUnitPrice">Price (TZS) <span class="text-danger">*</span></label>
+                      <input type="text" class="form-control @error('unit_price') is-invalid @enderror" id="cakePointUnitPrice"
+                        name="unit_price" inputmode="numeric" value="{{ old('unit_price') }}"
+                        placeholder="Enter price" disabled>
+                      @error('unit_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                   </div>
                   <div class="col-12 col-sm-6 col-lg-3 col-md-6">
@@ -229,7 +250,7 @@
                         <label class="form-check-label">
                           <input type="checkbox" class="form-check-input" name="send_sms" value="1"
                             @checked(old('send_sms', $smsReady)) @disabled(! $smsReady)>
-                          Notify staff by SMS
+                          Notify staff &amp; customer by SMS
                         </label>
                       </div>
                       @unless($smsReady)
@@ -664,6 +685,9 @@
         var providerField = document.querySelector('.js-cake-point-provider-field');
         var referenceField = document.querySelector('.js-cake-point-reference-field');
         var itemSelect = document.getElementById('cakePointItemId');
+        var itemNameInput = document.getElementById('cakePointItemName');
+        var unitPriceInput = document.getElementById('cakePointUnitPrice');
+        var customFields = document.querySelectorAll('.js-cake-point-custom-fields');
         var quantityInput = document.getElementById('cakePointQuantity');
         var discountInput = document.getElementById('cakePointDiscount');
         var totalEl = document.getElementById('cakePointOrderTotal');
@@ -673,6 +697,41 @@
 
         function formatMoney(amount) {
           return new Intl.NumberFormat('en-TZ').format(Math.max(0, Math.round(amount))) + ' TZS';
+        }
+
+        function selectedItemIsCustom() {
+          var option = itemSelect.options[itemSelect.selectedIndex];
+          return !!(option && option.dataset.isCustom === '1');
+        }
+
+        function syncCustomFields() {
+          var isCustom = selectedItemIsCustom();
+          customFields.forEach(function (el) {
+            el.classList.toggle('d-none', !isCustom);
+          });
+          if (itemNameInput) {
+            itemNameInput.disabled = !isCustom;
+            itemNameInput.required = isCustom;
+            if (!isCustom) {
+              itemNameInput.value = '';
+            }
+          }
+          if (unitPriceInput) {
+            unitPriceInput.disabled = !isCustom;
+            unitPriceInput.required = isCustom;
+            if (!isCustom) {
+              unitPriceInput.value = '';
+            }
+          }
+          updateTotal();
+        }
+
+        function currentUnitPrice() {
+          if (selectedItemIsCustom()) {
+            return parseFloat(unitPriceInput && unitPriceInput.value) || 0;
+          }
+          var option = itemSelect.options[itemSelect.selectedIndex];
+          return option && option.dataset.price ? parseFloat(option.dataset.price) : 0;
         }
 
         function syncPaymentFields() {
@@ -711,8 +770,7 @@
         }
 
         function updateTotal() {
-          var option = itemSelect.options[itemSelect.selectedIndex];
-          var price = option && option.dataset.price ? parseFloat(option.dataset.price) : 0;
+          var price = currentUnitPrice();
           var qty = parseFloat(quantityInput.value) || 0;
           var discount = parseFloat(discountInput.value) || 0;
           var subtotal = price * qty;
@@ -758,10 +816,13 @@
         }
         syncPaymentFields();
 
-        itemSelect.addEventListener('change', updateTotal);
+        itemSelect.addEventListener('change', syncCustomFields);
+        if (unitPriceInput) {
+          unitPriceInput.addEventListener('input', updateTotal);
+        }
         quantityInput.addEventListener('input', updateTotal);
         discountInput.addEventListener('input', updateTotal);
-        updateTotal();
+        syncCustomFields();
 
         if (form) {
           form.addEventListener('submit', function () {

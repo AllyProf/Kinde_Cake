@@ -129,6 +129,8 @@ class CakePointController extends Controller
         $validated = $request->validate([
             'staff_id' => ['required', 'exists:users,id'],
             'item_id' => ['required', 'exists:items,id'],
+            'item_name' => ['nullable', 'string', 'max:255'],
+            'unit_price' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
             'quantity' => ['required', 'numeric', 'gt:0', 'max:9999'],
             'discount' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
             'customer_id' => ['nullable', 'exists:customers,id'],
@@ -143,6 +145,23 @@ class CakePointController extends Controller
             'payment_provider_id' => ['nullable', 'exists:payment_providers,id'],
             'payment_reference' => ['nullable', 'string', 'max:120'],
         ]);
+
+        $item = Item::query()->where('is_active', true)->findOrFail($validated['item_id']);
+
+        if ($item->is_custom) {
+            if (! filled($validated['item_name'] ?? null)) {
+                return redirect()
+                    ->route('cake-point.index')
+                    ->withInput()
+                    ->with('error', 'Enter the custom cake name.');
+            }
+            if ((float) ($validated['unit_price'] ?? 0) <= 0) {
+                return redirect()
+                    ->route('cake-point.index')
+                    ->withInput()
+                    ->with('error', 'Enter a price for the custom cake.');
+            }
+        }
 
         $staff = User::query()
             ->where('role', User::ROLE_STAFF)
@@ -159,15 +178,22 @@ class CakePointController extends Controller
                 ->with('error', 'Choose a payment method for the advance payment.');
         }
 
+        $line = [
+            'item_id' => (int) $validated['item_id'],
+            'quantity' => (float) $validated['quantity'],
+            'discount' => (float) ($validated['discount'] ?? 0),
+        ];
+
+        if ($item->is_custom) {
+            $line['item_name'] = trim((string) $validated['item_name']);
+            $line['unit_price'] = (float) $validated['unit_price'];
+        }
+
         try {
             $sale = $this->cakePoint->createAndAssign(
                 $request->user(),
                 $staff,
-                [[
-                    'item_id' => (int) $validated['item_id'],
-                    'quantity' => (float) $validated['quantity'],
-                    'discount' => (float) ($validated['discount'] ?? 0),
-                ]],
+                [$line],
                 isset($validated['customer_id']) ? (int) $validated['customer_id'] : null,
                 $validated['customer_name'] ?? null,
                 $validated['customer_phone'],
@@ -206,8 +232,17 @@ class CakePointController extends Controller
         if ($advanceAmount > 0) {
             $message .= ' Advance '.number_format($advanceAmount, 0).' TZS recorded.';
         }
-        if ($request->boolean('send_sms') && filled($staff->phone)) {
-            $message .= ' Staff notified by SMS.';
+        if ($request->boolean('send_sms')) {
+            $notices = [];
+            if (filled($staff->phone)) {
+                $notices[] = 'staff';
+            }
+            if (filled($sale->customer_phone)) {
+                $notices[] = 'customer';
+            }
+            if ($notices !== []) {
+                $message .= ' SMS sent to '.implode(' & ', $notices).'.';
+            }
         }
 
         return redirect()
@@ -272,17 +307,23 @@ class CakePointController extends Controller
         ]);
 
         try {
-            $this->cakePoint->updateStatus($sale, $request->user(), $validated['status']);
+            $updated = $this->cakePoint->updateStatus($sale, $request->user(), $validated['status']);
         } catch (\Illuminate\Validation\ValidationException $exception) {
             return redirect()
                 ->back()
                 ->with('error', collect($exception->errors())->flatten()->first());
         }
 
-        $label = $sale->fresh()->cakePointStatusLabel();
+        $label = $updated->cakePointStatusLabel();
+
+        if ($validated['status'] === Sale::CAKE_POINT_RECEIVED) {
+            return redirect()
+                ->route('customer-orders.index')
+                ->with('success', "Order {$updated->sale_number} received. It is now on Customer Orders.");
+        }
 
         return redirect()
             ->back()
-            ->with('success', "Order {$sale->sale_number} marked as {$label}.");
+            ->with('success', "Order {$updated->sale_number} marked as {$label}.");
     }
 }
