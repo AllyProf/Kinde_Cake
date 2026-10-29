@@ -364,6 +364,38 @@ class Sale extends Model
         };
     }
 
+    /** @return array<string, mixed> */
+    public function cakePointDetailPayload(): array
+    {
+        return [
+            'sale_number' => $this->sale_number,
+            'ordered_at' => $this->sold_at->format('d M Y H:i'),
+            'ready_at' => $this->ready_at?->format('d M Y H:i'),
+            'customer_name' => $this->customer_name ?: 'Walk-in',
+            'customer_phone' => $this->customer_phone ?: '',
+            'notes' => $this->notes ?: '',
+            'total' => $this->formattedTotal(),
+            'amount_paid' => $this->formattedAmountPaid(),
+            'balance_due' => $this->formattedBalanceDue(),
+            'status' => $this->cakePointStatusLabel(),
+            'sold_by' => $this->user?->name ?? '-',
+            'assigned_to' => $this->assignedTo?->name ?? '-',
+            'assigned_by' => $this->assignedBy?->name ?? '-',
+            'items' => $this->items->map(function ($line) {
+                return [
+                    'name' => $line->displayName(),
+                    'quantity' => number_format((float) $line->quantity, 0),
+                    'unit' => $line->item?->packageUnit?->symbol ?? '',
+                    'unit_price' => number_format((float) $line->unit_price, 0).' TZS',
+                    'discount' => (float) $line->discount > 0
+                        ? number_format((float) $line->discount, 0).' TZS'
+                        : '-',
+                    'line_total' => number_format((float) $line->line_total, 0).' TZS',
+                ];
+            })->values()->all(),
+        ];
+    }
+
     /** @return array<string, string> */
     public static function cakePointStatusFilterOptions(): array
     {
