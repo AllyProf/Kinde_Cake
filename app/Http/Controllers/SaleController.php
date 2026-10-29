@@ -324,6 +324,14 @@ class SaleController extends Controller
         $this->authorizeSaleAccess($sale);
 
         $validated = $this->validateSalePayload($request);
+        $advanceAmount = (float) ($validated['advance_amount'] ?? 0);
+
+        if ($advanceAmount > 0 && empty($validated['payment_method'])) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Choose a payment method for the amount paid now.');
+        }
 
         $customerId = isset($validated['customer_id']) ? (int) $validated['customer_id'] : null;
         $customerId = $this->syncCustomerBirthday(
@@ -343,7 +351,7 @@ class SaleController extends Controller
             ])->values()->all();
         }
 
-        $this->sales->update(
+        $sale = $this->sales->update(
             $sale,
             collect($validated['items'])->values()->all(),
             $ingredients,
@@ -355,9 +363,46 @@ class SaleController extends Controller
             $validated['ready_at'] ?? null,
         );
 
+        $paymentWarning = null;
+        if ($advanceAmount > 0) {
+            $sale->refresh();
+            $balanceDueDate = $validated['credit_repayment_date']
+                ?? ($sale->ready_at?->toDateString() ?: now()->toDateString());
+
+            try {
+                $this->sales->pay(
+                    $request->user(),
+                    $sale,
+                    $advanceAmount,
+                    $validated['payment_method'],
+                    isset($validated['payment_provider_id']) ? (int) $validated['payment_provider_id'] : null,
+                    $validated['payment_reference'] ?? null,
+                    $customerId,
+                    $validated['customer_name'] ?? null,
+                    $validated['customer_phone'] ?? null,
+                    $balanceDueDate,
+                );
+                $sale->refresh();
+            } catch (\Illuminate\Validation\ValidationException $exception) {
+                $paymentWarning = collect($exception->errors())->flatten()->first()
+                    ?: 'Sale updated, but payment could not be recorded.';
+            }
+        }
+
+        $message = "Sale {$sale->sale_number} updated successfully.";
+        if ($advanceAmount > 0 && ! $paymentWarning) {
+            $message .= ' Payment '.number_format($advanceAmount, 0).' TZS recorded.';
+        }
+
+        if ($paymentWarning) {
+            return redirect()
+                ->route('sales.show', $sale)
+                ->with('warning', $message.' '.$paymentWarning);
+        }
+
         return redirect()
             ->route('sales.index')
-            ->with('success', "Sale {$sale->sale_number} updated successfully.");
+            ->with('success', $message);
     }
 
     public function pay(Request $request, Sale $sale): RedirectResponse

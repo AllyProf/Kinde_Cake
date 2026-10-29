@@ -69,26 +69,89 @@
               Total: <span id="saleGrandTotal">0 TZS</span>
             </div>
 
-            <div class="js-sale-order-fields">
-              <h5 class="mb-3">Pickup &amp; customer</h5>
-              <div class="row">
-                <div class="col-12 col-lg-4 col-md-6">
-                  <div class="form-group">
-                    <label class="control-label" for="saleReadyAt">Ready / pickup date</label>
-                    <input type="datetime-local" class="form-control @error('ready_at') is-invalid @enderror"
-                      id="saleReadyAt" name="ready_at"
-                      value="{{ old('ready_at', $sale->ready_at?->format('Y-m-d\TH:i')) }}">
-                    @error('ready_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
+            <h5 class="mb-3" id="salePaymentHeading">Payment</h5>
+            <div class="row">
+              <div class="col-12 col-lg-4 col-md-6 js-sale-order-fields">
+                <div class="form-group">
+                  <label class="control-label" for="saleReadyAt">Ready / pickup date</label>
+                  <input type="datetime-local" class="form-control @error('ready_at') is-invalid @enderror"
+                    id="saleReadyAt" name="ready_at"
+                    value="{{ old('ready_at', $sale->ready_at?->format('Y-m-d\TH:i')) }}">
+                  @error('ready_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  <small class="text-muted">When the cake / order should be ready.</small>
                 </div>
-                <div class="col-12 col-lg-4 col-md-6">
-                  <div class="form-group">
-                    <label class="control-label" for="saleCustomerBirthday">Customer birthday</label>
-                    <input type="date" class="form-control @error('customer_birthday') is-invalid @enderror"
-                      id="saleCustomerBirthday" name="customer_birthday"
-                      value="{{ old('customer_birthday', $sale->customer?->birthday?->format('Y-m-d')) }}">
-                    @error('customer_birthday')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
+              </div>
+              <div class="col-12 col-lg-4 col-md-6 js-sale-order-fields">
+                <div class="form-group">
+                  <label class="control-label" for="saleCustomerBirthday">Customer birthday</label>
+                  <input type="date" class="form-control @error('customer_birthday') is-invalid @enderror"
+                    id="saleCustomerBirthday" name="customer_birthday"
+                    value="{{ old('customer_birthday', $sale->customer?->birthday?->format('Y-m-d')) }}">
+                  @error('customer_birthday')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  <small class="text-muted">For birthday wish &amp; reminder SMS.</small>
+                </div>
+              </div>
+              <div class="col-12 col-lg-4 col-md-6">
+                <div class="form-group">
+                  <label class="control-label" for="saleAdvanceAmount" id="saleAdvanceLabel">Amount paid (TZS)</label>
+                  <input type="number" class="form-control @error('advance_amount') is-invalid @enderror"
+                    id="saleAdvanceAmount" name="advance_amount" min="0" step="1"
+                    value="{{ old('advance_amount', 0) }}" placeholder="0">
+                  @error('advance_amount')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  <small class="text-muted" id="saleAdvanceHint">Enter the amount received now. Leave 0 to pay later.</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="row js-sale-payment-fields">
+              <div class="col-12 col-lg-4 col-md-6">
+                <div class="form-group">
+                  <label class="control-label" for="salePaymentMethod">Payment method</label>
+                  <select class="form-control @error('payment_method') is-invalid @enderror"
+                    id="salePaymentMethod" name="payment_method">
+                    <option value="">Select...</option>
+                    @foreach(\App\Models\Sale::paymentMethodOptions() as $value => $label)
+                      @if($value !== \App\Models\Sale::PAYMENT_CREDIT)
+                        <option value="{{ $value }}" @selected(old('payment_method') === $value)>{{ $label }}</option>
+                      @endif
+                    @endforeach
+                  </select>
+                  @error('payment_method')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+              </div>
+              <div class="col-12 col-lg-4 col-md-6 js-sale-provider-field d-none">
+                <div class="form-group">
+                  <label class="control-label" for="salePaymentProvider">Provider</label>
+                  <select class="form-control @error('payment_provider_id') is-invalid @enderror"
+                    id="salePaymentProvider" name="payment_provider_id">
+                    <option value="">Select...</option>
+                    @foreach($paymentProviderOptions as $provider)
+                      <option value="{{ $provider['id'] }}" data-type="{{ $provider['type'] }}"
+                        @selected(old('payment_provider_id') == $provider['id'])>
+                        {{ $provider['name'] }}
+                      </option>
+                    @endforeach
+                  </select>
+                  @error('payment_provider_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+              </div>
+              <div class="col-12 col-lg-4 col-md-6 js-sale-reference-field d-none">
+                <div class="form-group">
+                  <label class="control-label" for="salePaymentReference">Reference</label>
+                  <input type="text" class="form-control @error('payment_reference') is-invalid @enderror"
+                    id="salePaymentReference" name="payment_reference"
+                    value="{{ old('payment_reference') }}" maxlength="120">
+                  @error('payment_reference')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+              </div>
+              <div class="col-12 col-lg-4 col-md-6 js-sale-balance-due-field d-none">
+                <div class="form-group">
+                  <label class="control-label" for="saleCreditRepaymentDate">Balance due date</label>
+                  <input type="date" class="form-control @error('credit_repayment_date') is-invalid @enderror"
+                    id="saleCreditRepaymentDate" name="credit_repayment_date"
+                    value="{{ old('credit_repayment_date') }}">
+                  @error('credit_repayment_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  <small class="text-muted">Defaults to ready / pickup date when left blank.</small>
                 </div>
               </div>
             </div>
@@ -288,6 +351,66 @@
       items: @json($initialItems),
       ingredients: [],
     };
+    window.salesPaymentProviders = @json($paymentProviderOptions);
   </script>
   <script src="{{ asset('panel-assets/js/sale-form.js') }}"></script>
+  <script>
+    (function () {
+      var advanceAmount = document.getElementById('saleAdvanceAmount');
+      var paymentMethod = document.getElementById('salePaymentMethod');
+      var providerField = document.querySelector('.js-sale-provider-field');
+      var referenceField = document.querySelector('.js-sale-reference-field');
+      var balanceDueField = document.querySelector('.js-sale-balance-due-field');
+      var providerSelect = document.getElementById('salePaymentProvider');
+      var readyAt = document.getElementById('saleReadyAt');
+      var balanceDue = document.getElementById('saleCreditRepaymentDate');
+
+      function syncPaymentFields() {
+        var amount = parseFloat(advanceAmount && advanceAmount.value) || 0;
+        var method = paymentMethod ? paymentMethod.value : '';
+        var needsProvider = method === 'mobile' || method === 'bank';
+        var mayLeaveBalance = amount > 0;
+
+        if (paymentMethod) {
+          paymentMethod.required = amount > 0;
+        }
+        if (providerField) {
+          providerField.classList.toggle('d-none', !needsProvider);
+        }
+        if (referenceField) {
+          referenceField.classList.toggle('d-none', !needsProvider);
+        }
+        if (balanceDueField) {
+          balanceDueField.classList.toggle('d-none', !mayLeaveBalance);
+        }
+
+        if (providerSelect && window.salesPaymentProviders) {
+          var options = providerSelect.querySelectorAll('option[data-type]');
+          options.forEach(function (option) {
+            var show = !needsProvider || option.getAttribute('data-type') === method;
+            option.hidden = !show;
+            if (!show && option.selected) {
+              providerSelect.value = '';
+            }
+          });
+        }
+
+        if (mayLeaveBalance && balanceDue && !balanceDue.value && readyAt && readyAt.value) {
+          balanceDue.value = readyAt.value.slice(0, 10);
+        }
+      }
+
+      if (advanceAmount) {
+        advanceAmount.addEventListener('input', syncPaymentFields);
+      }
+      if (paymentMethod) {
+        paymentMethod.addEventListener('change', syncPaymentFields);
+      }
+      if (readyAt) {
+        readyAt.addEventListener('change', syncPaymentFields);
+      }
+
+      syncPaymentFields();
+    })();
+  </script>
 @endpush
