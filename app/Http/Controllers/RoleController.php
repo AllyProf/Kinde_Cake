@@ -25,6 +25,8 @@ class RoleController extends Controller
 
     public function create(): View
     {
+        $this->roles->ensureDefaults();
+
         return view('roles.create', $this->formData());
     }
 

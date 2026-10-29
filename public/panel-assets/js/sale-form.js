@@ -102,7 +102,19 @@
     return valid;
   }
 
+  function hasValidCustomer() {
+    var name = ($('#customerNameInput').val() || '').trim();
+    var phone = ($('#customerPhoneInput').val() || '').trim();
+    var localDigits = phone.replace(/^\+255/, '').replace(/\D/g, '');
+
+    return name.length > 0 && localDigits.length === 9;
+  }
+
   function validateSaleForm() {
+    if (!hasValidCustomer()) {
+      return false;
+    }
+
     if (!hasValidItems()) {
       return false;
     }
@@ -116,7 +128,9 @@
       return;
     }
 
-    if (!hasValidItems()) {
+    if (!hasValidCustomer()) {
+      $hint.text('Add customer name and phone before saving.');
+    } else if (!hasValidItems()) {
       $hint.text('Add at least one item to save.');
     } else if (requireIngredients && !hasValidIngredients()) {
       $hint.text('Add at least one ingredient used to save.');
@@ -162,19 +176,26 @@
   }
 
   function updateCustomerChip() {
-    var name = $('#customerNameInput').val().trim();
-    var phone = $('#customerPhoneInput').val().trim();
-    var text = 'Walk-in customer';
+    var name = ($('#customerNameInput').val() || '').trim();
+    var phone = ($('#customerPhoneInput').val() || '').trim();
+    var $chip = $('#customerChip');
+    var text = 'Customer required — tap Customer';
 
     if (name && phone) {
       text = name + ' · ' + phone;
     } else if (name) {
-      text = name;
+      text = name + ' · phone required';
     } else if (phone) {
-      text = phone;
+      text = 'Name required · ' + phone;
     }
 
     $('#customerChipText').text(text);
+    $chip.toggleClass('is-missing', !hasValidCustomer());
+    $chip.toggleClass('is-complete', hasValidCustomer());
+
+    if (refreshSubmitState) {
+      refreshSubmitState();
+    }
   }
 
   function syncModalFromHidden() {
@@ -200,6 +221,9 @@
     $('#modalCustomerName').val(customer.name);
     if (window.PhoneTz) {
       window.PhoneTz.setPhone($('#modalCustomerPhoneLocal'), customer.phone || '');
+    }
+    if (customer.birthday && $('#saleCustomerBirthday').length) {
+      $('#saleCustomerBirthday').val(customer.birthday);
     }
   }
 
@@ -242,6 +266,10 @@
   }
 
   function addIngredientRow(values) {
+    if (!$('#ingredientsBody').length) {
+      return;
+    }
+
     values = values || {};
     var idx = ingredientIndex++;
     var requiredAttr = requireIngredients ? ' required' : '';
@@ -293,11 +321,44 @@
         window.PhoneTz.syncPhoneFull($('#modalCustomerPhoneLocal'));
       }
 
+      var name = ($('#modalCustomerName').val() || '').trim();
+      var phoneLocal = ($('#modalCustomerPhoneLocal').val() || '').replace(/\D/g, '');
+      var $nameInput = $('#modalCustomerName');
+      var $phoneLocal = $('#modalCustomerPhoneLocal');
+      var $error = $('#customerModalError');
+
+      $nameInput.removeClass('is-invalid');
+      $phoneLocal.removeClass('is-invalid');
+      if ($error.length) {
+        $error.addClass('d-none').text('');
+      }
+
+      if (!name || phoneLocal.length !== 9) {
+        if (!name) {
+          $nameInput.addClass('is-invalid');
+        }
+        if (phoneLocal.length !== 9) {
+          $phoneLocal.addClass('is-invalid');
+        }
+        if ($error.length) {
+          $error.removeClass('d-none').text('Customer name and a valid 9-digit phone are required.');
+        }
+        return;
+      }
+
       var customerId = $('#modalCustomerSelect').val();
       $('#customerIdInput').val(customerId || '');
-      $('#customerNameInput').val($('#modalCustomerName').val().trim());
+      $('#customerNameInput').val(name);
       $('#customerPhoneInput').val($('#modalCustomerPhoneFull').val().trim());
       $('#soldAtInput').val($('#modalSoldAt').val());
+
+      if (customerId && $('#saleCustomerBirthday').length) {
+        var customer = customerById(customerId);
+        if (customer && customer.birthday && !$('#saleCustomerBirthday').val()) {
+          $('#saleCustomerBirthday').val(customer.birthday);
+        }
+      }
+
       updateCustomerChip();
       $('#customerModal').modal('hide');
     });

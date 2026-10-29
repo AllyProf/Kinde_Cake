@@ -1,4 +1,6 @@
-@php($showDate = $showDate ?? false)
+@php
+  $showDate = $showDate ?? false;
+@endphp
 
 <div class="table-responsive detail-table-wrap day-close-staff-wrap">
   <table class="table table-hover table-bordered mb-0 detail-card-table day-close-staff-table">

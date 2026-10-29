@@ -83,6 +83,7 @@ class CustomerController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:255'],
+            'birthday' => ['nullable', 'date'],
             'region' => ['nullable', 'string', Rule::in($this->locations->regions())],
             'district' => ['nullable', 'string', 'max:120'],
             'location' => ['nullable', 'string', 'max:255'],

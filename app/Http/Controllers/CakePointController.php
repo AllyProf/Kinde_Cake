@@ -86,7 +86,7 @@ class CakePointController extends Controller
             : collect();
 
         $customers = auth()->user()->isOwner()
-            ? Customer::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'phone'])
+            ? Customer::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'phone', 'birthday'])
             : collect();
 
         $smsReady = $this->sms->isReady();
@@ -134,8 +134,14 @@ class CakePointController extends Controller
             'customer_id' => ['nullable', 'exists:customers,id'],
             'customer_name' => ['nullable', 'string', 'max:255'],
             'customer_phone' => ['required', 'string', 'max:30'],
+            'customer_birthday' => ['nullable', 'date'],
+            'ready_at' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'send_sms' => ['nullable', 'boolean'],
+            'advance_amount' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
+            'payment_method' => ['nullable', Rule::in(array_keys(Sale::paymentMethodOptions()))],
+            'payment_provider_id' => ['nullable', 'exists:payment_providers,id'],
+            'payment_reference' => ['nullable', 'string', 'max:120'],
         ]);
 
         $staff = User::query()
@@ -144,6 +150,14 @@ class CakePointController extends Controller
             ->findOrFail($validated['staff_id']);
 
         $sale = null;
+        $advanceAmount = (float) ($validated['advance_amount'] ?? 0);
+
+        if ($advanceAmount > 0 && empty($validated['payment_method'])) {
+            return redirect()
+                ->route('cake-point.index')
+                ->withInput()
+                ->with('error', 'Choose a payment method for the advance payment.');
+        }
 
         try {
             $sale = $this->cakePoint->createAndAssign(
@@ -159,6 +173,16 @@ class CakePointController extends Controller
                 $validated['customer_phone'],
                 $validated['notes'] ?? null,
                 $request->boolean('send_sms'),
+                [
+                    'ready_at' => $validated['ready_at'] ?? null,
+                    'customer_birthday' => $validated['customer_birthday'] ?? null,
+                    'advance_amount' => $advanceAmount,
+                    'payment_method' => $validated['payment_method'] ?? null,
+                    'payment_provider_id' => isset($validated['payment_provider_id'])
+                        ? (int) $validated['payment_provider_id']
+                        : null,
+                    'payment_reference' => $validated['payment_reference'] ?? null,
+                ],
             );
         } catch (\Illuminate\Validation\ValidationException $exception) {
             $errors = $exception->errors();
@@ -176,6 +200,12 @@ class CakePointController extends Controller
         }
 
         $message = "Order {$sale->sale_number} sent to {$staff->name}.";
+        if ($sale->ready_at) {
+            $message .= ' Ready '.$sale->ready_at->format('d M Y H:i').'.';
+        }
+        if ($advanceAmount > 0) {
+            $message .= ' Advance '.number_format($advanceAmount, 0).' TZS recorded.';
+        }
         if ($request->boolean('send_sms') && filled($staff->phone)) {
             $message .= ' Staff notified by SMS.';
         }

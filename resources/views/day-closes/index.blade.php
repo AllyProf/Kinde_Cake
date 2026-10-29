@@ -7,7 +7,7 @@
     $personalSummary = $personalClose?->summary ?? $summary;
     $businessSummary = $existingClose?->summary ?? $ownerSummary;
     $personalDayLocked = (bool) ($existingClose || $personalClose);
-    $canManageExpenses = ! $personalDayLocked && auth()->user()->canClosePersonalDay();
+    $canManageExpenses = ! $personalDayLocked && auth()->user()->hasPermission('expenses.manage');
     $canClosePersonal = ! $existingClose && ! $personalClose && auth()->user()->canClosePersonalDay()
       && (! $isOwner || $ownerHasActivity);
     $canCloseBusiness = $isOwner && $ownerCanClose && ! $existingClose;
@@ -76,7 +76,7 @@
   </div>
 
   <div class="row">
-    <div class="col-lg-7">
+    <div class="col-md-12">
       @if($isOwner && ! $existingClose && $ownerHasActivity)
         <div class="tile">
           <h3 class="tile-title">My personal day — {{ $selectedDate->format('d M Y') }}</h3>
@@ -354,64 +354,6 @@
           </div>
         </div>
       @endif
-    </div>
-
-    <div class="col-lg-5">
-      @if($isOwner && ! $existingClose && $pendingStaff->isNotEmpty())
-        <div class="tile mb-3">
-          <h3 class="tile-title">Waiting for staff</h3>
-          <div class="tile-body">
-            <ul class="mb-0">
-              @foreach($pendingStaff as $staff)
-                <li>{{ $staff->name }}</li>
-              @endforeach
-            </ul>
-          </div>
-        </div>
-      @endif
-
-      <div class="tile">
-        <h3 class="tile-title">{{ $isOwner ? 'Recent business closes' : 'My recent closes' }}</h3>
-        <div class="tile-body">
-          <div class="table-responsive detail-table-wrap day-close-history-wrap">
-            <table class="table table-hover table-bordered mb-0 detail-card-table day-close-history-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Collected</th>
-                  <th>Net</th>
-                  @if($isOwner)
-                    <th>Closed by</th>
-                  @endif
-                </tr>
-              </thead>
-              <tbody>
-                @forelse($history as $close)
-                  <tr>
-                    <td data-label="Date">
-                      <a href="{{ route('day-closes.index', ['date' => $close->business_date->format('Y-m-d')]) }}">
-                        {{ $close->formattedBusinessDate() }}
-                      </a>
-                    </td>
-                    <td data-label="Collected">{{ $close->formattedSummaryMoney('total_collected') }}</td>
-                    <td data-label="Net">{{ $close->formattedSummaryMoney('net_in_hand') }}</td>
-                    @if($isOwner)
-                      <td data-label="Closed by">{{ $close->closedBy?->name ?? '—' }}</td>
-                    @endif
-                  </tr>
-                @empty
-                  <tr>
-                    <td colspan="{{ $isOwner ? 4 : 3 }}" class="text-center text-muted py-3">No closes yet.</td>
-                  </tr>
-                @endforelse
-              </tbody>
-            </table>
-          </div>
-          @if($history->hasPages())
-            <div class="mt-3">{{ $history->links() }}</div>
-          @endif
-        </div>
-      </div>
     </div>
   </div>
 

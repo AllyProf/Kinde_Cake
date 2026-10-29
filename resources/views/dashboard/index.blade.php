@@ -6,6 +6,7 @@
   @php
     $stats = $stats ?? [];
     $todayLabel = $today->format('l, d M Y');
+    $showFinancials = $can_view_financials ?? false;
   @endphp
 
   <div class="app-title">
@@ -20,40 +21,63 @@
   </div>
 
   <div class="row dashboard-stat-cards mb-3">
-    <div class="col-md-6 col-lg-3">
-      @include('partials._stat-card', [
-        'label' => 'Collected today',
-        'value' => number_format($stats['today_collected'] ?? 0, 0).' TZS',
-      ])
-    </div>
-    <div class="col-md-6 col-lg-3">
+    @if($showFinancials)
+      <div class="col-md-6 col-lg-3">
+        @include('partials._stat-card', [
+          'label' => 'Collected today',
+          'value' => number_format($stats['today_collected'] ?? 0, 0).' TZS',
+        ])
+      </div>
+    @endif
+
+    <div class="col-md-6 {{ $showFinancials ? 'col-lg-3' : 'col-lg-4' }}">
       @include('partials._stat-card', [
         'label' => 'Sales today',
         'value' => number_format($stats['today_sales_count'] ?? 0),
       ])
     </div>
-    <div class="col-md-6 col-lg-3">
-      @include('partials._stat-card', [
-        'label' => $is_owner ? 'Month collected' : 'My month collected',
-        'value' => number_format($stats['month_collected'] ?? 0, 0).' TZS',
-      ])
-    </div>
-    <div class="col-md-6 col-lg-3">
+
+    @if($showFinancials)
+      <div class="col-md-6 col-lg-3">
+        @include('partials._stat-card', [
+          'label' => $is_owner ? 'Month collected' : 'My month collected',
+          'value' => number_format($stats['month_collected'] ?? 0, 0).' TZS',
+        ])
+      </div>
+      <div class="col-md-6 col-lg-3">
+        @if($has_sales_access)
+          @include('partials._stat-card', [
+            'label' => 'Outstanding debt',
+            'value' => number_format($stats['outstanding_debt'] ?? 0, 0).' TZS',
+          ])
+        @else
+          @include('partials._stat-card', [
+            'label' => 'Expenses today',
+            'value' => number_format($stats['today_expenses'] ?? 0, 0).' TZS',
+          ])
+        @endif
+      </div>
+    @else
       @if($has_sales_access)
-        @include('partials._stat-card', [
-          'label' => 'Outstanding debt',
-          'value' => number_format($stats['outstanding_debt'] ?? 0, 0).' TZS',
-        ])
-      @else
-        @include('partials._stat-card', [
-          'label' => 'Expenses today',
-          'value' => number_format($stats['today_expenses'] ?? 0, 0).' TZS',
-        ])
+        <div class="col-md-6 col-lg-4">
+          @include('partials._stat-card', [
+            'label' => 'My orders',
+            'value' => number_format($stats['active_cake_point'] ?? 0),
+          ])
+        </div>
       @endif
-    </div>
+      @if($has_inventory_access)
+        <div class="col-md-6 col-lg-4">
+          @include('partials._stat-card', [
+            'label' => 'Stock alerts',
+            'value' => number_format(($stats['low_stock_count'] ?? 0) + ($stats['out_of_stock_count'] ?? 0)),
+          ])
+        </div>
+      @endif
+    @endif
   </div>
 
-  @if($has_sales_access)
+  @if($has_sales_access && $showFinancials)
     <div class="row dashboard-chart-row">
       <div class="col-lg-8">
         <div class="tile h-100">
@@ -106,7 +130,9 @@
                   <tr>
                     <th>Sale #</th>
                     <th>Customer</th>
-                    <th>Total</th>
+                    @if($showFinancials)
+                      <th>Total</th>
+                    @endif
                     <th>Status</th>
                     <th>Date</th>
                   </tr>
@@ -118,7 +144,9 @@
                         <a href="{{ route('sales.show', $sale) }}">{{ $sale->sale_number }}</a>
                       </td>
                       <td>{{ $sale->customer_name ?: ($sale->customer?->name ?? 'Walk-in') }}</td>
-                      <td>{{ number_format($sale->total, 0) }} TZS</td>
+                      @if($showFinancials)
+                        <td>{{ number_format($sale->total, 0) }} TZS</td>
+                      @endif
                       <td>
                         <span class="badge {{ $sale->statusBadgeClass() }}">{{ $sale->statusLabel() }}</span>
                       </td>
@@ -126,7 +154,7 @@
                     </tr>
                   @empty
                     <tr>
-                      <td colspan="5" class="text-center text-muted py-4">No sales recorded yet.</td>
+                      <td colspan="{{ $showFinancials ? 5 : 4 }}" class="text-center text-muted py-4">No sales recorded yet.</td>
                     </tr>
                   @endforelse
                 </tbody>
@@ -147,18 +175,23 @@
                 <i class="fa fa-plus-circle text-primary"></i> New sale
               </a>
             @endif
-            @if($has_sales_access)
+            @if($has_sales_access && ($can_manage_debts ?? false))
               <a href="{{ route('debts.index') }}" class="list-group-item list-group-item-action">
                 <i class="fa fa-credit-card text-warning"></i> Debt management
-                @if(($stats['open_debts_count'] ?? 0) > 0)
+                @if($showFinancials && ($stats['open_debts_count'] ?? 0) > 0)
                   <span class="badge badge-warning float-right">{{ $stats['open_debts_count'] }}</span>
                 @endif
               </a>
+            @endif
+            @if($has_sales_access)
               <a href="{{ route('cake-point.index') }}" class="list-group-item list-group-item-action">
                 <i class="fa fa-birthday-cake text-info"></i> Orders
                 @if(($stats['active_cake_point'] ?? 0) > 0)
                   <span class="badge badge-info float-right">{{ $stats['active_cake_point'] }}</span>
                 @endif
+              </a>
+              <a href="{{ route('customer-orders.index') }}" class="list-group-item list-group-item-action">
+                <i class="fa fa-calendar-check-o text-primary"></i> Customer orders
               </a>
             @endif
             @if($can_close_day)
@@ -191,7 +224,7 @@
         </div>
       </div>
 
-      @if($has_sales_access && $top_debts->isNotEmpty())
+      @if($showFinancials && $has_sales_access && $top_debts->isNotEmpty())
         <div class="tile">
           <h3 class="tile-title">Top outstanding debts</h3>
           <div class="tile-body">
@@ -291,7 +324,7 @@
   </div>
 @endsection
 
-@if($has_sales_access)
+@if($has_sales_access && ($can_view_financials ?? false))
   @push('styles')
     <style>
       .dashboard-chart-row {

@@ -14,6 +14,13 @@ class DebtController extends Controller
 {
     public function index(Request $request): View
     {
+        $user = $request->user();
+        if (! $user->isOwner()
+            && ! $user->hasPermission('reports.view')
+            && ! $user->hasPermission('orders.create')) {
+            abort(403, 'You do not have permission to view debt management.');
+        }
+
         $filters = array_merge([
             'search' => '',
             'type' => '',
@@ -24,7 +31,7 @@ class DebtController extends Controller
             'due' => ['nullable', Rule::in(['overdue', 'upcoming', 'none'])],
         ]));
 
-        $query = $this->filteredDebtQuery($filters, $request->user())
+        $query = $this->filteredDebtQuery($filters, $user)
             ->with(['user', 'paymentProvider'])
             ->orderByRaw('credit_repayment_date IS NULL')
             ->orderBy('credit_repayment_date')

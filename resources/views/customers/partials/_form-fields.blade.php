@@ -49,6 +49,15 @@
   </div>
   <div class="col-12 col-md-6">
     <div class="form-group">
+      <label class="control-label">Birthday</label>
+      <input type="date" class="form-control @error('birthday') is-invalid @enderror" name="birthday"
+        value="{{ old('birthday', optional($record->birthday ?? null)->format('Y-m-d')) }}">
+      @error('birthday')<div class="invalid-feedback">{{ $message }}</div>@enderror
+      <small class="text-muted">Used for birthday wish SMS and cake reminders.</small>
+    </div>
+  </div>
+  <div class="col-12 col-md-6">
+    <div class="form-group">
       <label class="control-label">Region</label>
       <select class="form-control js-customer-region @error('region') is-invalid @enderror" name="region" id="customerRegion">
         <option value=""></option>

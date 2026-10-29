@@ -59,7 +59,7 @@
                     <td>{{ $ingredient->usagePackageUnit?->name }} ({{ $ingredient->usagePackageUnit?->symbol }})</td>
                     <td>{{ $ingredient->conversionLabel() }}</td>
                     <td>
-                      <strong>{{ $ingredient->formattedStock() }}</strong>
+                      <strong>{{ $ingredient->formattedStockSummary() }}</strong>
                       @if($ingredient->isLowStock())
                         <br><span class="badge badge-warning">Low stock</span>
                       @endif

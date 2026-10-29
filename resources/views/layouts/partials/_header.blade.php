@@ -1,5 +1,8 @@
 <header class="app-header">
-  <a class="app-header__logo" href="{{ route('dashboard') }}">{{ config('app.name', 'Kinde Cake') }}</a>
+  @php
+    $headerBusinessName = app(\App\Services\AppSettingsService::class)->get('business_name', config('app.name', 'Kinde Cake'));
+  @endphp
+  <a class="app-header__logo" href="{{ route('dashboard') }}">{{ $headerBusinessName }}</a>
   <a class="app-sidebar__toggle" href="#" data-toggle="sidebar" aria-label="Hide Sidebar"></a>
   <ul class="app-nav">
     <li class="app-search">

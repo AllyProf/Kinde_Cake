@@ -25,7 +25,34 @@ class RoleService
             return;
         }
 
-        $defaults = [
+        foreach ($this->defaultRoleDefinitions() as $role) {
+            Role::create($role);
+        }
+    }
+
+    /**
+     * Sync system roles to current default permission sets (adds new keys, keeps extras removed if invalid).
+     */
+    public function syncSystemRolePermissions(): void
+    {
+        $bySlug = collect($this->defaultRoleDefinitions())->keyBy('slug');
+
+        foreach (Role::query()->where('is_system', true)->get() as $role) {
+            $definition = $bySlug->get($role->slug);
+            if (! $definition) {
+                continue;
+            }
+
+            $role->update([
+                'permissions' => $this->sanitizePermissions($definition['permissions']),
+            ]);
+        }
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function defaultRoleDefinitions(): array
+    {
+        return [
             [
                 'name' => 'Manager',
                 'slug' => 'manager',
@@ -43,6 +70,8 @@ class RoleService
                     'orders.manage',
                     'inventory.view',
                     'inventory.manage',
+                    'expenses.view',
+                    'expenses.manage',
                 ],
                 'is_system' => true,
             ],
@@ -57,14 +86,14 @@ class RoleService
                     'orders.manage',
                     'customers.view',
                     'customers.manage',
+                    'expenses.view',
+                    'expenses.manage',
+                    'sms.view',
+                    'sms.send',
                 ],
                 'is_system' => true,
             ],
         ];
-
-        foreach ($defaults as $role) {
-            Role::create($role);
-        }
     }
 
     /** @param list<string> $submitted */

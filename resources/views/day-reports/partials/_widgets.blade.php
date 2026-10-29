@@ -1,9 +1,31 @@
 @php
   $summary = $report['summary'] ?? [];
+  $cashFlowMoneyIn = (float) ($summary['total_collected'] ?? 0);
+  $cashFlowMoneyOut = round((float) ($summary['expenses_total'] ?? 0) + (float) ($report['receivings_total'] ?? 0), 2);
+  $cashFlowNet = round($cashFlowMoneyIn - $cashFlowMoneyOut, 2);
 @endphp
 
 <div class="row dashboard-stat-cards mb-3 day-report-widgets">
-  @if($reportType === \App\Services\DayReportService::TYPE_COLLECTIONS)
+  @if($reportType === \App\Services\DayReportService::TYPE_CASH_FLOW)
+    <div class="col-md-4 col-sm-6">
+      @include('partials._stat-card', [
+        'label' => 'Money in',
+        'value' => number_format($cashFlowMoneyIn, 0).' TZS',
+      ])
+    </div>
+    <div class="col-md-4 col-sm-6">
+      @include('partials._stat-card', [
+        'label' => 'Money out',
+        'value' => number_format($cashFlowMoneyOut, 0).' TZS',
+      ])
+    </div>
+    <div class="col-md-4 col-sm-6">
+      @include('partials._stat-card', [
+        'label' => 'Net cash',
+        'value' => number_format($cashFlowNet, 0).' TZS',
+      ])
+    </div>
+  @elseif($reportType === \App\Services\DayReportService::TYPE_COLLECTIONS)
     <div class="col-md-3 col-sm-6">
       @include('partials._stat-card', [
         'label' => 'Total collected',

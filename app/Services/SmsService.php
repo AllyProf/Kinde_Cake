@@ -74,6 +74,59 @@ class SmsService
         return $this->buildCakePointMessage($sale, $staff);
     }
 
+    public function buildSaleConfirmationMessage(Sale $sale): string
+    {
+        $template = $this->settings->get(
+            'sms_sale_confirmation_template',
+            config('sms.defaults.sale_confirmation_template'),
+        ) ?? config('sms.defaults.sale_confirmation_template');
+
+        $readyAtLine = $sale->ready_at
+            ? ' Ready / pickup: '.$sale->ready_at->format('d M Y H:i').'.'
+            : '';
+
+        $replacements = [
+            '{customer_name}' => $sale->customer_name ?: 'Customer',
+            '{sale_number}' => $sale->sale_number,
+            '{items_summary}' => $sale->itemsSummary() ?: '—',
+            '{total}' => $sale->formattedTotal(),
+            '{amount_paid}' => $sale->formattedAmountPaid(),
+            '{balance_due}' => $sale->formattedBalanceDue(),
+            '{ready_at}' => $sale->ready_at?->format('d M Y H:i') ?: '—',
+            '{ready_at_line}' => $readyAtLine,
+            '{business_name}' => $this->settings->get('business_name', config('app.name', 'Kinde Cake')) ?? 'Kinde Cake',
+            '{business_phone}' => $this->settings->get('business_phone', '') ?: '',
+        ];
+
+        return trim(preg_replace('/\s+/', ' ', str_replace(array_keys($replacements), array_values($replacements), $template)) ?? '');
+    }
+
+    public function buildCakeReadyMessage(Sale $sale): string
+    {
+        $template = $this->settings->get(
+            'sms_cake_ready_template',
+            config('sms.defaults.cake_ready_template'),
+        ) ?? config('sms.defaults.cake_ready_template');
+
+        $readyAtLine = $sale->ready_at
+            ? ' Please collect by '.$sale->ready_at->format('d M Y H:i').'.'
+            : ' You can collect it now.';
+
+        $replacements = [
+            '{customer_name}' => $sale->customer_name ?: 'Customer',
+            '{sale_number}' => $sale->sale_number,
+            '{items_summary}' => $sale->itemsSummary() ?: '—',
+            '{total}' => $sale->formattedTotal(),
+            '{balance_due}' => $sale->formattedBalanceDue(),
+            '{ready_at}' => $sale->ready_at?->format('d M Y H:i') ?: 'now',
+            '{ready_at_line}' => $readyAtLine,
+            '{business_name}' => $this->settings->get('business_name', config('app.name', 'Kinde Cake')) ?? 'Kinde Cake',
+            '{business_phone}' => $this->settings->get('business_phone', '') ?: '',
+        ];
+
+        return trim(preg_replace('/\s+/', ' ', str_replace(array_keys($replacements), array_values($replacements), $template)) ?? '');
+    }
+
     /** @return string|null Provider response body on success (when available). */
     public function send(string $phone, string $message): ?string
     {

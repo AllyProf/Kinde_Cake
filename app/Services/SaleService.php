@@ -27,8 +27,9 @@ class SaleService
         ?string $customerName,
         ?string $customerPhone,
         ?string $notes,
+        ?string $readyAt = null,
     ): Sale {
-        return DB::transaction(function () use ($user, $items, $customerId, $customerName, $customerPhone, $notes) {
+        return DB::transaction(function () use ($user, $items, $customerId, $customerName, $customerPhone, $notes, $readyAt) {
             $saleItems = $this->buildSaleItems(
                 collect($items)->map(function (array $row) {
                     if (! isset($row['unit_price'])) {
@@ -52,11 +53,49 @@ class SaleService
                 'status' => Sale::STATUS_PENDING,
                 'notes' => $notes,
                 'sold_at' => now(),
+                'ready_at' => $readyAt,
             ]);
 
             $this->persistLines($sale, $saleItems, []);
 
             return $sale->load(['items.item', 'user']);
+        });
+    }
+
+    public function transferPayments(Sale $from, Sale $to): void
+    {
+        if ((float) $from->amount_paid <= 0) {
+            return;
+        }
+
+        DB::transaction(function () use ($from, $to) {
+            $from = Sale::query()->lockForUpdate()->findOrFail($from->id);
+            $to = Sale::query()->lockForUpdate()->findOrFail($to->id);
+
+            $from->payments()->update(['sale_id' => $to->id]);
+
+            $to->update([
+                'amount_paid' => $from->amount_paid,
+                'status' => $from->status,
+                'payment_method' => $from->payment_method,
+                'payment_provider_id' => $from->payment_provider_id,
+                'payment_reference' => $from->payment_reference,
+                'credit_repayment_date' => $from->credit_repayment_date,
+                'paid_at' => $from->paid_at,
+                'customer_id' => $to->customer_id ?: $from->customer_id,
+                'customer_name' => $to->customer_name ?: $from->customer_name,
+                'customer_phone' => $to->customer_phone ?: $from->customer_phone,
+            ]);
+
+            $from->update([
+                'amount_paid' => 0,
+                'status' => Sale::STATUS_PENDING,
+                'payment_method' => null,
+                'payment_provider_id' => null,
+                'payment_reference' => null,
+                'credit_repayment_date' => null,
+                'paid_at' => null,
+            ]);
         });
     }
 
@@ -73,8 +112,9 @@ class SaleService
         ?string $customerPhone,
         ?string $notes,
         string $soldAt,
+        ?string $readyAt = null,
     ): Sale {
-        return DB::transaction(function () use ($user, $items, $usages, $customerId, $customerName, $customerPhone, $notes, $soldAt) {
+        return DB::transaction(function () use ($user, $items, $usages, $customerId, $customerName, $customerPhone, $notes, $soldAt, $readyAt) {
             $this->validateStock($usages);
 
             $saleItems = $this->buildSaleItems($items);
@@ -90,6 +130,7 @@ class SaleService
                 'status' => Sale::STATUS_PENDING,
                 'notes' => $notes,
                 'sold_at' => $soldAt,
+                'ready_at' => $readyAt,
             ]);
 
             $this->persistLines($sale, $saleItems, $usages);
@@ -111,8 +152,9 @@ class SaleService
         ?string $customerPhone,
         ?string $notes,
         string $soldAt,
+        ?string $readyAt = null,
     ): Sale {
-        return DB::transaction(function () use ($sale, $items, $usages, $customerId, $customerName, $customerPhone, $notes, $soldAt) {
+        return DB::transaction(function () use ($sale, $items, $usages, $customerId, $customerName, $customerPhone, $notes, $soldAt, $readyAt) {
             $sale = Sale::query()->lockForUpdate()->findOrFail($sale->id);
 
             if (! $sale->canBeEdited()) {
@@ -143,6 +185,7 @@ class SaleService
                 'total' => $total,
                 'notes' => $notes,
                 'sold_at' => $soldAt,
+                'ready_at' => $readyAt,
                 'edited_at' => now(),
             ]);
 

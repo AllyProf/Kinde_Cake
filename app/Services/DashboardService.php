@@ -26,27 +26,45 @@ class DashboardService
     {
         $today = now()->startOfDay();
         $monthStart = now()->copy()->startOfMonth();
+        $canViewFinancials = $this->canViewFinancials($user);
         $scopeUser = $user->isOwner() ? null : $user;
 
-        $todaySummary = $this->dayClose->buildSummary($today, $scopeUser);
-        $monthSummary = $user->isOwner()
-            ? $this->dayReport->buildRangeSummary($monthStart, $today)
-            : $this->buildStaffMonthSummary($user, $monthStart, $today);
+        $todaySummary = $canViewFinancials || $user->canClosePersonalDay()
+            ? $this->dayClose->buildSummary($today, $scopeUser)
+            : ['sales_count' => $this->todaySalesCount($user, $today), 'total_collected' => 0];
 
-        $weekTrend = $this->buildWeekTrend($user, $today);
-        $paymentMethods = $this->buildPaymentMethodChart($todaySummary);
-        $debtRows = $this->debtQuery($user)->get(['id', 'sale_number', 'customer_name', 'total', 'amount_paid', 'payment_method', 'credit_repayment_date', 'status', 'sold_at']);
+        $monthSummary = $canViewFinancials
+            ? ($user->isOwner()
+                ? $this->dayReport->buildRangeSummary($monthStart, $today)
+                : $this->buildStaffMonthSummary($user, $monthStart, $today))
+            : ['sales_count' => 0, 'sales_total' => 0, 'total_collected' => 0];
+
+        $weekTrend = $canViewFinancials
+            ? $this->buildWeekTrend($user, $today)
+            : ['labels' => [], 'collected' => [], 'sales_total' => []];
+
+        $paymentMethods = $canViewFinancials
+            ? $this->buildPaymentMethodChart($todaySummary)
+            : [];
+
+        $debtRows = $canViewFinancials
+            ? $this->debtQuery($user)->get(['id', 'sale_number', 'customer_name', 'total', 'amount_paid', 'payment_method', 'credit_repayment_date', 'status', 'sold_at'])
+            : collect();
 
         $stats = [
-            'today_collected' => (float) ($todaySummary['total_collected'] ?? 0),
+            'today_collected' => $canViewFinancials ? (float) ($todaySummary['total_collected'] ?? 0) : 0,
             'today_sales_count' => (int) ($todaySummary['sales_count'] ?? 0),
-            'today_expenses' => (float) ($todaySummary['expenses_total'] ?? 0),
-            'today_net' => (float) ($todaySummary['net_in_hand'] ?? 0),
-            'month_collected' => (float) ($monthSummary['total_collected'] ?? 0),
-            'month_sales_count' => (int) ($monthSummary['sales_count'] ?? 0),
-            'month_sales_total' => (float) ($monthSummary['sales_total'] ?? 0),
-            'outstanding_debt' => round((float) $debtRows->sum(fn (Sale $sale) => $sale->debtAmount()), 2),
-            'overdue_debts' => $debtRows->filter(fn (Sale $sale) => $sale->isDebtOverdue())->count(),
+            'today_expenses' => $canViewFinancials ? (float) ($todaySummary['expenses_total'] ?? 0) : 0,
+            'today_net' => $canViewFinancials ? (float) ($todaySummary['net_in_hand'] ?? 0) : 0,
+            'month_collected' => $canViewFinancials ? (float) ($monthSummary['total_collected'] ?? 0) : 0,
+            'month_sales_count' => $canViewFinancials ? (int) ($monthSummary['sales_count'] ?? 0) : 0,
+            'month_sales_total' => $canViewFinancials ? (float) ($monthSummary['sales_total'] ?? 0) : 0,
+            'outstanding_debt' => $canViewFinancials
+                ? round((float) $debtRows->sum(fn (Sale $sale) => $sale->debtAmount()), 2)
+                : 0,
+            'overdue_debts' => $canViewFinancials
+                ? $debtRows->filter(fn (Sale $sale) => $sale->isDebtOverdue())->count()
+                : 0,
             'open_debts_count' => $debtRows->count(),
             'active_cake_point' => $this->activeCakePointCount($user),
         ];
@@ -58,6 +76,7 @@ class DashboardService
         return [
             'business_name' => $this->settings->get('business_name', config('app.name', 'Kinde Cake')),
             'is_owner' => $user->isOwner(),
+            'can_view_financials' => $canViewFinancials,
             'today' => $today,
             'today_summary' => $todaySummary,
             'month_summary' => $monthSummary,
@@ -66,10 +85,9 @@ class DashboardService
             'stats' => $stats,
             'alerts' => $this->appNotifications->alerts($user),
             'recent_sales' => $this->recentSales($user),
-            'top_debts' => $debtRows
-                ->sortByDesc(fn (Sale $sale) => $sale->debtAmount())
-                ->take(5)
-                ->values(),
+            'top_debts' => $canViewFinancials
+                ? $debtRows->sortByDesc(fn (Sale $sale) => $sale->debtAmount())->take(5)->values()
+                : collect(),
             'low_stock' => $inventory['low_stock']->take(5)->values(),
             'out_of_stock' => $inventory['out_of_stock']->take(5)->values(),
             'business_day_closed' => DayClose::query()->whereDate('business_date', $today)->exists(),
@@ -84,7 +102,27 @@ class DashboardService
             'has_inventory_access' => $user->hasPermission('inventory.view'),
             'can_create_sale' => $user->hasPermission('orders.create'),
             'can_close_day' => $user->canClosePersonalDay(),
+            'can_manage_debts' => $canViewFinancials || $user->hasPermission('orders.create'),
         ];
+    }
+
+    public function canViewFinancials(User $user): bool
+    {
+        return $user->isOwner() || $user->hasPermission('reports.view');
+    }
+
+    private function todaySalesCount(User $user, Carbon $today): int
+    {
+        $query = Sale::query()
+            ->realSales()
+            ->whereDate('sold_at', $today)
+            ->whereNotIn('status', [Sale::STATUS_CANCELLED, Sale::STATUS_DELETED]);
+
+        if (! $user->isOwner()) {
+            $query->visibleTo($user);
+        }
+
+        return $query->count();
     }
 
     /** @return array{labels: list<string>, collected: list<float>, sales_total: list<float>} */

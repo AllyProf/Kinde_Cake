@@ -59,9 +59,7 @@ class Ingredient extends Model
 
     public function formattedStock(): string
     {
-        $symbol = $this->usagePackageUnit?->symbol ?? '';
-
-        return number_format((float) $this->stock_quantity, 0).' '.$symbol;
+        return $this->formatQty((float) $this->stock_quantity).' '.($this->usagePackageUnit?->symbol ?? 'unit');
     }
 
     public function stockInReceivingUnits(): float
@@ -77,9 +75,34 @@ class Ingredient extends Model
 
     public function formattedStockInReceiving(): string
     {
-        $symbol = $this->receivingPackageUnit?->symbol ?? '';
+        return $this->formatQty($this->stockInReceivingUnits()).' '.($this->receivingPackageUnit?->symbol ?? 'unit');
+    }
 
-        return number_format($this->stockInReceivingUnits(), 1).' '.$symbol;
+    /**
+     * Stock as both receiving packages and usage units, e.g. "2 tray (60 pcs)".
+     */
+    public function formattedStockSummary(): string
+    {
+        $receivingSymbol = $this->receivingPackageUnit?->symbol ?? 'unit';
+        $usageSymbol = $this->usagePackageUnit?->symbol ?? 'unit';
+        $receivingQty = $this->stockInReceivingUnits();
+        $usageQty = (float) $this->stock_quantity;
+
+        if ($receivingSymbol === $usageSymbol || (float) $this->usage_per_receiving === 1.0) {
+            return $this->formatQty($usageQty).' '.$usageSymbol;
+        }
+
+        return $this->formatQty($receivingQty).' '.$receivingSymbol
+            .' ('.$this->formatQty($usageQty).' '.$usageSymbol.')';
+    }
+
+    private function formatQty(float $value): string
+    {
+        if (abs($value - round($value)) < 0.0001) {
+            return number_format(round($value), 0);
+        }
+
+        return rtrim(rtrim(number_format($value, 2, '.', ','), '0'), '.');
     }
 
     public function stockStatusLabel(): string

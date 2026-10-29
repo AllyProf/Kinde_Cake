@@ -62,8 +62,11 @@ class Sale extends Model
         'deleted_at',
         'notes',
         'sold_at',
+        'ready_at',
         'edited_at',
         'order_sms_sent_at',
+        'ready_sms_sent_at',
+        'pickup_reminder_sent_at',
     ];
 
     protected function casts(): array
@@ -72,12 +75,15 @@ class Sale extends Model
             'total' => 'decimal:2',
             'amount_paid' => 'decimal:2',
             'sold_at' => 'datetime',
+            'ready_at' => 'datetime',
             'paid_at' => 'datetime',
             'credit_repayment_date' => 'date',
             'cancelled_at' => 'datetime',
             'deleted_at' => 'datetime',
             'edited_at' => 'datetime',
             'order_sms_sent_at' => 'datetime',
+            'ready_sms_sent_at' => 'datetime',
+            'pickup_reminder_sent_at' => 'datetime',
             'assigned_at' => 'datetime',
             'assignment_sms_sent_at' => 'datetime',
             'cake_point_received_at' => 'datetime',
@@ -500,6 +506,96 @@ class Sale extends Model
                 return "{$name} x{$qty}";
             })
             ->join(', ');
+    }
+
+    /**
+     * Friendly collect / ready label: Today, Tomorrow, Next week, etc.
+     */
+    public function readyAtRelativeLabel(?\Carbon\CarbonInterface $now = null): ?string
+    {
+        if (! $this->ready_at) {
+            return null;
+        }
+
+        $now = ($now ?? now())->copy()->startOfDay();
+        $readyDay = $this->ready_at->copy()->startOfDay();
+        $days = (int) $now->diffInDays($readyDay, false);
+
+        if ($days < 0) {
+            $ago = abs($days);
+            if ($ago === 1) {
+                return 'Yesterday';
+            }
+            if ($ago < 7) {
+                return $ago.' days ago';
+            }
+            if ($ago < 14) {
+                return 'Last week';
+            }
+
+            return $ago.' days ago';
+        }
+
+        if ($days === 0) {
+            return 'Today';
+        }
+
+        if ($days === 1) {
+            return 'Tomorrow';
+        }
+
+        if ($days < 7) {
+            return $readyDay->format('l'); // e.g. Friday
+        }
+
+        if ($days < 14) {
+            return 'Next week';
+        }
+
+        if ($days < 21) {
+            return 'In 2 weeks';
+        }
+
+        if ($readyDay->isSameMonth($now)) {
+            return 'Later this month';
+        }
+
+        $nextMonth = $now->copy()->addMonthNoOverflow();
+        if ((int) $readyDay->month === (int) $nextMonth->month
+            && (int) $readyDay->year === (int) $nextMonth->year) {
+            return 'Next month';
+        }
+
+        return 'In '.$days.' days';
+    }
+
+    public function readyAtRelativeBadgeClass(): string
+    {
+        if (! $this->ready_at) {
+            return 'badge-light';
+        }
+
+        $now = now()->startOfDay();
+        $readyDay = $this->ready_at->copy()->startOfDay();
+        $days = (int) $now->diffInDays($readyDay, false);
+
+        if ($days < 0 && $this->hasOutstandingBalance()) {
+            return 'badge-danger';
+        }
+
+        if ($days < 0) {
+            return 'badge-secondary';
+        }
+
+        if ($days === 0) {
+            return 'badge-info';
+        }
+
+        if ($days === 1) {
+            return 'badge-primary';
+        }
+
+        return 'badge-secondary';
     }
 
     /** @return array<string, string> */

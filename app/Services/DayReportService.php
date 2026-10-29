@@ -19,7 +19,11 @@ class DayReportService
 
     public const PERIOD_MONTH = 'month';
 
+    public const PERIOD_CUSTOM = 'custom';
+
     public const TYPE_SUMMARY = 'summary';
+
+    public const TYPE_CASH_FLOW = 'cash_flow';
 
     public const TYPE_COLLECTIONS = 'collections';
 
@@ -38,6 +42,7 @@ class DayReportService
     {
         return [
             self::TYPE_SUMMARY => 'Financial summary',
+            self::TYPE_CASH_FLOW => 'Cash in & out',
             self::TYPE_COLLECTIONS => 'Collections & payments',
             self::TYPE_SALES => 'Sales report',
             self::TYPE_EXPENSES => 'Expenses report',
@@ -47,10 +52,67 @@ class DayReportService
     }
 
     /** @return array{start: Carbon, end: Carbon, label: string} */
-    public function resolvePeriodRange(string $period, Carbon $anchor): array
+    public function resolvePeriodRange(string $period, Carbon $anchor, ?Carbon $from = null, ?Carbon $to = null): array
     {
         $anchor = $anchor->copy()->startOfDay();
         $today = now()->startOfDay();
+
+        if ($period === self::PERIOD_CUSTOM) {
+            $start = ($from ?? $anchor)->copy()->startOfDay();
+            $end = ($to ?? $from ?? $anchor)->copy()->startOfDay();
+
+            if ($end->lt($start)) {
+                [$start, $end] = [$end, $start];
+            }
+
+            if ($start->gt($today)) {
+                $start = $today->copy();
+            }
+            if ($end->gt($today)) {
+                $end = $today->copy();
+            }
+
+            $label = $start->equalTo($end)
+                ? $start->format('d M Y')
+                : $start->format('d M Y').' – '.$end->format('d M Y');
+
+            return [
+                'start' => $start,
+                'end' => $end,
+                'label' => $label,
+            ];
+        }
+
+        // Explicit from/to override presets (filters always send dates).
+        if ($from !== null && $to !== null) {
+            $start = $from->copy()->startOfDay();
+            $end = $to->copy()->startOfDay();
+
+            if ($end->lt($start)) {
+                [$start, $end] = [$end, $start];
+            }
+
+            if ($start->gt($today)) {
+                $start = $today->copy();
+            }
+            if ($end->gt($today)) {
+                $end = $today->copy();
+            }
+
+            if ($period === self::PERIOD_MONTH && $start->isSameMonth($end)) {
+                $label = $start->format('F Y');
+            } elseif ($start->equalTo($end)) {
+                $label = $start->format('d M Y');
+            } else {
+                $label = $start->format('d M Y').' – '.$end->format('d M Y');
+            }
+
+            return [
+                'start' => $start,
+                'end' => $end,
+                'label' => $label,
+            ];
+        }
 
         if ($period === self::PERIOD_WEEK) {
             $start = $anchor->copy()->startOfWeek(Carbon::MONDAY);
@@ -84,13 +146,15 @@ class DayReportService
     }
 
     /** @return array<string, mixed> */
-    public function buildReport(string $period, Carbon $anchor): array
+    public function buildReport(string $period, Carbon $anchor, ?Carbon $from = null, ?Carbon $to = null): array
     {
-        if ($period === self::PERIOD_DAY) {
-            return $this->buildDayReport($anchor);
+        $range = $this->resolvePeriodRange($period, $anchor, $from, $to);
+
+        if ($range['start']->equalTo($range['end'])) {
+            return $this->buildDayReport($range['start']);
         }
 
-        return $this->buildRangeReport($period, $anchor);
+        return $this->buildRangeReport($period, $range['start'], $range);
     }
 
     /** @return array<string, mixed> */
@@ -157,10 +221,13 @@ class DayReportService
         return $report;
     }
 
-    /** @return array<string, mixed> */
-    public function buildRangeReport(string $period, Carbon $anchor): array
+    /**
+     * @param  array{start: Carbon, end: Carbon, label: string}|null  $range
+     * @return array<string, mixed>
+     */
+    public function buildRangeReport(string $period, Carbon $anchor, ?array $range = null): array
     {
-        $range = $this->resolvePeriodRange($period, $anchor);
+        $range ??= $this->resolvePeriodRange($period, $anchor);
         $start = $range['start'];
         $end = $range['end'];
 
@@ -185,7 +252,7 @@ class DayReportService
             'period_label' => $range['label'],
             'range_start' => $start->toDateString(),
             'range_end' => $end->toDateString(),
-            'business_date' => $anchor->toDateString(),
+            'business_date' => $start->toDateString(),
             'is_closed' => false,
             'data_source' => 'live',
             'day_close' => null,
@@ -460,6 +527,10 @@ class DayReportService
         $summary = $report['summary'] ?? [];
 
         return match ($type) {
+            self::TYPE_CASH_FLOW => ($summary['total_collected'] ?? 0) > 0
+                || ($summary['expenses_total'] ?? 0) > 0
+                || ($report['receivings_total'] ?? 0) > 0
+                || ($report['daily_breakdown'] ?? collect())->isNotEmpty(),
             self::TYPE_COLLECTIONS => ($summary['payments_count'] ?? 0) > 0
                 || ($summary['total_collected'] ?? 0) > 0,
             self::TYPE_SALES => ($summary['sales_count'] ?? 0) > 0,

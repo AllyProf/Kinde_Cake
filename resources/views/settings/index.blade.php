@@ -17,17 +17,44 @@
 
   @include('settings.partials._tabs')
 
-  @if($tab === 'business')
-    @include('settings.partials._business')
-  @elseif($tab === 'appearance')
-    @include('settings.partials._appearance')
-  @elseif($tab === 'categories')
-    @include('settings.partials._categories')
-  @elseif($tab === 'payments')
-    @include('settings.partials._payments')
-  @elseif($tab === 'sms')
-    @include('settings.partials._sms')
-  @else
-    @include('settings.partials._packages')
-  @endif
+  @unless($canManageSettings)
+    <div class="alert alert-info">
+      <i class="fa fa-info-circle"></i>
+      You can view settings. Ask an owner or manager for permission to change them.
+    </div>
+  @endunless
+
+  <div class="{{ $canManageSettings ? '' : 'settings-readonly' }}">
+    @if($tab === 'business')
+      @include('settings.partials._business')
+    @elseif($tab === 'appearance')
+      @include('settings.partials._appearance')
+    @elseif($tab === 'categories')
+      @include('settings.partials._categories')
+    @elseif($tab === 'payments')
+      @include('settings.partials._payments')
+    @elseif($tab === 'sms')
+      @include('settings.partials._sms')
+    @else
+      @include('settings.partials._packages')
+    @endif
+  </div>
 @endsection
+
+@push('styles')
+  <style>
+    .settings-readonly input,
+    .settings-readonly select,
+    .settings-readonly textarea {
+      pointer-events: none;
+      background-color: #f5f5f5;
+    }
+    .settings-readonly button[type="submit"],
+    .settings-readonly .btn-danger,
+    .settings-readonly .btn-primary,
+    .settings-readonly .btn-success,
+    .settings-readonly .btn-secondary {
+      display: none !important;
+    }
+  </style>
+@endpush

@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             OwnerSeeder::class,
             RoleSeeder::class,
             SettingSeeder::class,
+            NotebookCatalogSeeder::class,
         ]);
     }
 }

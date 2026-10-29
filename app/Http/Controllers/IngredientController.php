@@ -35,6 +35,10 @@ class IngredientController extends Controller
             'receiving_package_unit_id' => $validated['receiving_package_unit_id'],
             'usage_package_unit_id' => $validated['usage_package_unit_id'],
             'usage_per_receiving' => $validated['usage_per_receiving'],
+            'stock_quantity' => $this->stockQuantityFromReceiving(
+                (float) $validated['stock_receiving'],
+                (float) $validated['usage_per_receiving'],
+            ),
             'reorder_level' => $validated['reorder_level'] ?? 0,
             'description' => $validated['description'] ?? null,
             'is_active' => $request->boolean('is_active', true),
@@ -59,6 +63,10 @@ class IngredientController extends Controller
             'receiving_package_unit_id' => $validated['receiving_package_unit_id'],
             'usage_package_unit_id' => $validated['usage_package_unit_id'],
             'usage_per_receiving' => $validated['usage_per_receiving'],
+            'stock_quantity' => $this->stockQuantityFromReceiving(
+                (float) $validated['stock_receiving'],
+                (float) $validated['usage_per_receiving'],
+            ),
             'reorder_level' => $validated['reorder_level'] ?? 0,
             'description' => $validated['description'] ?? null,
             'is_active' => $request->boolean('is_active', true),
@@ -111,8 +119,14 @@ class IngredientController extends Controller
                 Rule::exists('package_units', 'id')->where(fn ($query) => $query->where('is_active', true)),
             ],
             'usage_per_receiving' => ['required', 'numeric', 'gt:0', 'max:999999999.9999'],
+            'stock_receiving' => ['required', 'numeric', 'min:0', 'max:999999999.9999'],
             'reorder_level' => ['nullable', 'numeric', 'min:0', 'max:999999999.9999'],
             'description' => ['nullable', 'string', 'max:1000'],
         ]);
+    }
+
+    private function stockQuantityFromReceiving(float $receivingQty, float $usagePerReceiving): float
+    {
+        return round(max(0, $receivingQty) * max(0, $usagePerReceiving), 4);
     }
 }

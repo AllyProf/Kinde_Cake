@@ -64,6 +64,9 @@
         <h3 class="tile-title">Info</h3>
         <div class="tile-body">
           <p class="mb-1"><strong>Date:</strong> {{ $sale->sold_at->format('d M Y H:i') }}</p>
+          @if($sale->ready_at)
+            <p class="mb-1"><strong>Ready / pickup:</strong> {{ $sale->ready_at->format('d M Y H:i') }}</p>
+          @endif
           <p class="mb-1"><strong>Customer:</strong> {{ $sale->customer_name ?: '—' }}</p>
           <p class="mb-1"><strong>Phone:</strong> {{ $sale->customer_phone ?: '—' }}</p>
           <p class="mb-1"><strong>Sold by:</strong> {{ $sale->user?->name ?? '—' }}</p>

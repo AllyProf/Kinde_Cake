@@ -96,6 +96,7 @@
                           <option value="{{ $customer->id }}"
                             data-name="{{ $customer->name }}"
                             data-phone="{{ $customer->phone }}"
+                            data-birthday="{{ $customer->birthday?->format('Y-m-d') }}"
                             @selected(old('customer_id') == $customer->id)>
                             {{ $customer->name }}{{ $customer->phone ? ' · '.$customer->phone : '' }}
                           </option>
@@ -132,6 +133,83 @@
                         <input type="hidden" name="customer_phone" id="cakePointCustomerPhoneFull" value="{{ old('customer_phone') }}">
                       </div>
                       @error('customer_phone')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-12 col-lg-4 col-md-6">
+                    <div class="form-group">
+                      <label class="control-label" for="cakePointReadyAt">Ready / pickup date</label>
+                      <input type="datetime-local" class="form-control @error('ready_at') is-invalid @enderror"
+                        id="cakePointReadyAt" name="ready_at"
+                        value="{{ old('ready_at') }}"
+                        min="{{ now()->format('Y-m-d\TH:i') }}">
+                      @error('ready_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                      <small class="text-muted">When the cake should be ready (can be next week/month).</small>
+                    </div>
+                  </div>
+                  <div class="col-12 col-lg-4 col-md-6">
+                    <div class="form-group">
+                      <label class="control-label" for="cakePointCustomerBirthday">Customer birthday</label>
+                      <input type="date" class="form-control @error('customer_birthday') is-invalid @enderror"
+                        id="cakePointCustomerBirthday" name="customer_birthday"
+                        value="{{ old('customer_birthday') }}">
+                      @error('customer_birthday')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                      <small class="text-muted">Used for birthday wish &amp; cake reminder SMS.</small>
+                    </div>
+                  </div>
+                  <div class="col-12 col-lg-4 col-md-6">
+                    <div class="form-group">
+                      <label class="control-label" for="cakePointAdvanceAmount">Advance / pay now (TZS)</label>
+                      <input type="number" class="form-control @error('advance_amount') is-invalid @enderror"
+                        id="cakePointAdvanceAmount" name="advance_amount" min="0" step="1"
+                        value="{{ old('advance_amount', 0) }}" placeholder="0">
+                      @error('advance_amount')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                      <small class="text-muted">0 = pay later. Enter full total to mark paid in full.</small>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row js-cake-point-payment-fields">
+                  <div class="col-12 col-lg-4 col-md-6">
+                    <div class="form-group">
+                      <label class="control-label" for="cakePointPaymentMethod">Payment method</label>
+                      <select class="form-control @error('payment_method') is-invalid @enderror"
+                        id="cakePointPaymentMethod" name="payment_method">
+                        <option value="">Select...</option>
+                        @foreach(\App\Models\Sale::paymentMethodOptions() as $value => $label)
+                          @if($value !== \App\Models\Sale::PAYMENT_CREDIT)
+                            <option value="{{ $value }}" @selected(old('payment_method') === $value)>{{ $label }}</option>
+                          @endif
+                        @endforeach
+                      </select>
+                      @error('payment_method')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                  </div>
+                  <div class="col-12 col-lg-4 col-md-6 js-cake-point-provider-field d-none">
+                    <div class="form-group">
+                      <label class="control-label" for="cakePointPaymentProvider">Provider</label>
+                      <select class="form-control @error('payment_provider_id') is-invalid @enderror"
+                        id="cakePointPaymentProvider" name="payment_provider_id">
+                        <option value="">Select...</option>
+                        @foreach($paymentProviderOptions as $provider)
+                          <option value="{{ $provider['id'] }}" data-type="{{ $provider['type'] }}"
+                            @selected(old('payment_provider_id') == $provider['id'])>
+                            {{ $provider['name'] }}
+                          </option>
+                        @endforeach
+                      </select>
+                      @error('payment_provider_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                  </div>
+                  <div class="col-12 col-lg-4 col-md-6 js-cake-point-reference-field d-none">
+                    <div class="form-group">
+                      <label class="control-label" for="cakePointPaymentReference">Reference</label>
+                      <input type="text" class="form-control @error('payment_reference') is-invalid @enderror"
+                        id="cakePointPaymentReference" name="payment_reference"
+                        value="{{ old('payment_reference') }}" maxlength="120">
+                      @error('payment_reference')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                   </div>
                 </div>
@@ -282,7 +360,8 @@
               <thead>
                 <tr>
                   <th>Sale</th>
-                  <th>Date</th>
+                  <th>Ordered</th>
+                  <th>Ready</th>
                   <th>Customer</th>
                   <th>Items</th>
                   <th>Total</th>
@@ -299,7 +378,14 @@
                     <td data-label="Sale">
                       <a href="{{ route('sales.show', $order) }}">{{ $order->sale_number }}</a>
                     </td>
-                    <td data-label="Date">{{ $order->sold_at->format('d M Y H:i') }}</td>
+                    <td data-label="Ordered">{{ $order->sold_at->format('d M Y H:i') }}</td>
+                    <td data-label="Ready">
+                      @if($order->ready_at)
+                        {{ $order->ready_at->format('d M Y H:i') }}
+                      @else
+                        <span class="text-muted">—</span>
+                      @endif
+                    </td>
                     <td data-label="Customer">
                       {{ $order->customer_name ?: 'Walk-in' }}
                       @if($order->customer_phone)
@@ -338,6 +424,22 @@
                       @endif
                     </td>
                     <td class="cake-point-actions text-center" data-label="Actions">
+                      @if(auth()->user()->canPaySales() && $order->canBePaid() && ! $order->isCakePointCompleted())
+                        <button type="button"
+                          class="btn btn-sm btn-success js-pay-sale mb-1"
+                          data-sale-number="{{ $order->sale_number }}"
+                          data-sale-total="{{ $order->formattedTotal() }}"
+                          data-sale-total-raw="{{ $order->total }}"
+                          data-amount-paid="{{ $order->amount_paid }}"
+                          data-balance-due="{{ $order->balanceDue() }}"
+                          data-pay-url="{{ route('sales.pay', $order) }}"
+                          data-customer-id="{{ $order->customer_id }}"
+                          data-customer-name="{{ $order->customer_name }}"
+                          data-customer-phone="{{ $order->customer_phone }}"
+                          data-repayment-date="{{ $order->credit_repayment_date?->format('Y-m-d') ?: $order->ready_at?->format('Y-m-d') }}">
+                          <i class="fa fa-money"></i> {{ $order->isPartiallyPaid() ? 'Pay balance' : 'Pay' }}
+                        </button>
+                      @endif
                       @if($order->isCakePointSent() && $order->canUpdateCakePointStatus(auth()->user()))
                         <form action="{{ route('cake-point.update-status', $order) }}" method="POST" class="d-inline">
                           @csrf
@@ -556,6 +658,11 @@
         var customerName = document.getElementById('cakePointCustomerName');
         var customerPhoneLocal = document.getElementById('cakePointCustomerPhoneLocal');
         var customerPhoneFull = document.getElementById('cakePointCustomerPhoneFull');
+        var customerBirthday = document.getElementById('cakePointCustomerBirthday');
+        var advanceAmount = document.getElementById('cakePointAdvanceAmount');
+        var paymentMethod = document.getElementById('cakePointPaymentMethod');
+        var providerField = document.querySelector('.js-cake-point-provider-field');
+        var referenceField = document.querySelector('.js-cake-point-reference-field');
         var itemSelect = document.getElementById('cakePointItemId');
         var quantityInput = document.getElementById('cakePointQuantity');
         var discountInput = document.getElementById('cakePointDiscount');
@@ -568,11 +675,30 @@
           return new Intl.NumberFormat('en-TZ').format(Math.max(0, Math.round(amount))) + ' TZS';
         }
 
+        function syncPaymentFields() {
+          var amount = parseFloat(advanceAmount && advanceAmount.value) || 0;
+          var method = paymentMethod ? paymentMethod.value : '';
+          var needsProvider = method === 'mobile' || method === 'bank';
+
+          if (paymentMethod) {
+            paymentMethod.required = amount > 0;
+          }
+          if (providerField) {
+            providerField.classList.toggle('d-none', !needsProvider);
+          }
+          if (referenceField) {
+            referenceField.classList.toggle('d-none', !needsProvider);
+          }
+        }
+
         function fillCustomerFromSelect() {
           if (!customerSelect) return;
           var option = customerSelect.options[customerSelect.selectedIndex];
           if (!option || !option.value) return;
           customerName.value = option.dataset.name || '';
+          if (customerBirthday && option.dataset.birthday) {
+            customerBirthday.value = option.dataset.birthday;
+          }
           var phone = option.dataset.phone || '';
           if (phone.startsWith('+255')) {
             customerPhoneLocal.value = phone.replace('+255', '').replace(/^0/, '');
@@ -623,6 +749,14 @@
         if (customerSelect) {
           customerSelect.addEventListener('change', fillCustomerFromSelect);
         }
+
+        if (advanceAmount) {
+          advanceAmount.addEventListener('input', syncPaymentFields);
+        }
+        if (paymentMethod) {
+          paymentMethod.addEventListener('change', syncPaymentFields);
+        }
+        syncPaymentFields();
 
         itemSelect.addEventListener('change', updateTotal);
         quantityInput.addEventListener('input', updateTotal);

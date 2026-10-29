@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Ingredient;
 use App\Models\IngredientReceiving;
+use App\Models\IngredientUsage;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -92,6 +93,43 @@ class IngredientStockService
         }
 
         $ingredient->decrement('stock_quantity', round($usageQuantity, 4));
+    }
+
+    public function recordUsage(
+        Ingredient $ingredient,
+        User $user,
+        float $quantityUsed,
+        string $usedAt,
+        ?string $notes = null,
+    ): IngredientUsage {
+        return DB::transaction(function () use ($ingredient, $user, $quantityUsed, $usedAt, $notes) {
+            $ingredient = Ingredient::query()->lockForUpdate()->findOrFail($ingredient->id);
+            $qty = round($quantityUsed, 4);
+
+            if ($qty <= 0) {
+                throw ValidationException::withMessages([
+                    'quantity_used' => 'Quantity used must be greater than zero.',
+                ]);
+            }
+
+            if ((float) $ingredient->stock_quantity < $qty) {
+                throw ValidationException::withMessages([
+                    'quantity_used' => "Not enough stock for {$ingredient->name}. Available: {$ingredient->formattedStock()}.",
+                ]);
+            }
+
+            $usage = IngredientUsage::create([
+                'ingredient_id' => $ingredient->id,
+                'user_id' => $user->id,
+                'quantity_used' => $qty,
+                'used_at' => $usedAt,
+                'notes' => $notes,
+            ]);
+
+            $this->deduct($ingredient, $qty);
+
+            return $usage->load(['ingredient.usagePackageUnit', 'user']);
+        });
     }
 
     public function restore(Ingredient $ingredient, float $usageQuantity): void

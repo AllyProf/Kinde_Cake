@@ -5,12 +5,25 @@
 @section('content')
   @php
     $summary = $report['summary'] ?? [];
-    $isDay = $period === \App\Services\DayReportService::PERIOD_DAY;
+    $isDay = ($range['start'] ?? $from)->equalTo($range['end'] ?? $to);
     $isWeek = $period === \App\Services\DayReportService::PERIOD_WEEK;
     $isMonth = $period === \App\Services\DayReportService::PERIOD_MONTH;
-    $periodLabel = $isDay ? 'Daily' : ($isWeek ? 'Weekly' : 'Monthly');
+    $isCustom = $period === \App\Services\DayReportService::PERIOD_CUSTOM;
+    $periodLabel = match (true) {
+      $isDay && ! $isCustom => 'Daily',
+      $isWeek => 'Weekly',
+      $isMonth => 'Monthly',
+      default => 'Custom range',
+    };
     $reportTypeLabel = $reportTypes[$reportType] ?? 'Report';
+    $todayUrl = route('day-reports.index', [
+      'type' => $reportType,
+      'period' => 'day',
+      'from' => now()->format('Y-m-d'),
+      'to' => now()->format('Y-m-d'),
+    ]);
     $noDataMessage = match ($reportType) {
+      \App\Services\DayReportService::TYPE_CASH_FLOW => 'No money in or money out was recorded for '.$report['period_label'].'.',
       \App\Services\DayReportService::TYPE_SALES => 'No sales were recorded for '.$report['period_label'].'.',
       \App\Services\DayReportService::TYPE_EXPENSES => 'No expenses were recorded for '.$report['period_label'].'.',
       \App\Services\DayReportService::TYPE_PURCHASES => 'No ingredient receivings were recorded for '.$report['period_label'].'.',
@@ -25,7 +38,7 @@
   <div class="app-title">
     <div>
       <h1><i class="fa fa-bar-chart"></i> Reports</h1>
-      <p>Choose a report type and period, then click View report.</p>
+      <p>Pick a report type, set the dates, then view the numbers.</p>
     </div>
     <ul class="app-breadcrumb breadcrumb">
       <li class="breadcrumb-item"><i class="fa fa-home fa-lg"></i></li>
@@ -50,18 +63,30 @@
   @endif
 
   <div class="row">
-    <div class="col-lg-8">
+    <div class="col-lg-9">
       <div class="tile">
-        <h3 class="tile-title">{{ $reportTypeLabel }} — {{ $periodLabel }} · {{ $report['period_label'] }}</h3>
+        <div class="tile-title-w-btn">
+          <h3 class="title">{{ $reportTypeLabel }}</h3>
+          <p class="mb-0 text-muted">{{ $periodLabel }} · {{ $report['period_label'] }}</p>
+        </div>
         <div class="tile-body">
           @if(! $hasData)
-            <div class="text-center py-5">
+            <div class="text-center py-5 day-report-empty">
               <i class="fa fa-folder-open-o fa-4x text-muted mb-3"></i>
               <h4 class="text-muted">No data found</h4>
-              <p class="text-muted mb-0">{{ $noDataMessage }}</p>
+              <p class="text-muted">{{ $noDataMessage }}</p>
+              @if(! $from->isToday() || ! $to->isToday())
+                <a href="{{ $todayUrl }}" class="btn btn-primary mt-2">
+                  <i class="fa fa-calendar"></i> View today’s report
+                </a>
+              @endif
+              <p class="text-muted mt-3 mb-0">
+                Or choose another report type above, or a closed day on the right.
+              </p>
             </div>
           @else
             @include(match ($reportType) {
+              \App\Services\DayReportService::TYPE_CASH_FLOW => 'day-reports.partials._report-cash-flow',
               \App\Services\DayReportService::TYPE_COLLECTIONS => 'day-reports.partials._report-collections',
               \App\Services\DayReportService::TYPE_SALES => 'day-reports.partials._report-sales',
               \App\Services\DayReportService::TYPE_EXPENSES => 'day-reports.partials._report-expenses',
@@ -74,7 +99,7 @@
       </div>
     </div>
 
-    <div class="col-lg-4">
+    <div class="col-lg-3">
       <div class="tile">
         <h3 class="tile-title">Recent closed days</h3>
         <div class="tile-body">
@@ -88,12 +113,14 @@
               </thead>
               <tbody>
                 @forelse($recentDays as $close)
+                  @php $closedDate = $close->business_date->format('Y-m-d'); @endphp
                   <tr>
                     <td data-label="Date">
                       <a href="{{ route('day-reports.index', [
                         'type' => $reportType,
                         'period' => 'day',
-                        'date' => $close->business_date->format('Y-m-d'),
+                        'from' => $closedDate,
+                        'to' => $closedDate,
                       ]) }}">
                         {{ $close->formattedBusinessDate() }}
                       </a>
@@ -110,7 +137,7 @@
           </div>
           @if($isDay)
             <div class="mt-3 day-report-sidebar-action">
-              <a href="{{ route('day-closes.index', ['date' => $selectedDate->format('Y-m-d')]) }}" class="btn btn-outline-primary btn-sm">
+              <a href="{{ route('day-closes.index', ['date' => $from->format('Y-m-d')]) }}" class="btn btn-outline-primary btn-sm btn-block">
                 <i class="fa fa-calendar-check-o"></i> Go to Close Day
               </a>
             </div>

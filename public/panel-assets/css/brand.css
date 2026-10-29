@@ -1,12 +1,12 @@
 :root {
-  --sidebar-bg: #1c2124;
+  --sidebar-bg: #2c3539;
   --sidebar-profile-bg: #eceff1;
-  --sidebar-active-bg: rgba(0, 0, 0, 0.32);
-  --sidebar-submenu-bg: #161a1d;
-  --sidebar-hover-bg: rgba(0, 0, 0, 0.22);
-  --sidebar-divider: rgba(255, 255, 255, 0.08);
-  --sidebar-brand-text: #2b2b2b;
-  --sidebar-brand-muted: #6b7280;
+  --sidebar-active-bg: #000000;
+  --sidebar-submenu-bg: #262e32;
+  --sidebar-hover-bg: #1a1f22;
+  --sidebar-divider: rgba(255, 255, 255, 0.1);
+  --sidebar-brand-text: #222;
+  --sidebar-brand-muted: #777;
 }
 
 body,
@@ -27,9 +27,19 @@ body,
 
 .app-header__logo {
   color: var(--white) !important;
-  font-weight: 700;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left !important;
   width: 230px;
   max-width: 230px;
+  padding: 0 14px !important;
+  line-height: 50px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-nav__item,
@@ -47,61 +57,68 @@ body,
   background-color: rgba(0, 0, 0, 0.15) !important;
 }
 
-/* Sidebar — dark theme with brand accent, expandable submenus */
+/* Sidebar — Mauzo / White Candle layout (exact) */
 .app-sidebar {
   background-color: var(--sidebar-bg) !important;
   box-shadow: 0 8px 17px rgba(0, 0, 0, 0.35) !important;
+  padding-top: 50px !important;
 }
 
-.app-sidebar__brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.app-sidebar__user {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px;
+  margin: 0 !important;
   margin-bottom: 0 !important;
-  padding: 14px 12px;
+  padding: 12px 14px !important;
   background: var(--sidebar-profile-bg) !important;
-  border-bottom: 1px solid #d8dde0;
+  color: var(--sidebar-brand-text) !important;
+  border-bottom: 1px solid #d0d5d8;
 }
 
-.app-sidebar__brand-mark {
-  flex: 0 0 44px;
-  width: 44px;
-  height: 44px;
-  background-color: var(--brand);
-  color: var(--white);
-  display: flex;
+.app-sidebar__user-avatar {
+  flex: 0 0 48px !important;
+  width: 48px !important;
+  height: 48px !important;
+  margin-right: 0 !important;
+  border-radius: 0 !important;
+  background: var(--brand) !important;
+  color: var(--white) !important;
+  display: flex !important;
   align-items: center;
   justify-content: center;
-  font-size: 1.35rem;
+  font-size: 1.55rem;
   font-weight: 700;
   line-height: 1;
-  border-radius: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
 }
 
-.app-sidebar__brand-info {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.app-sidebar__brand-name {
-  margin: 0 0 3px;
-  color: var(--sidebar-brand-text) !important;
+.app-sidebar__user-name {
+  margin: 0 0 3px !important;
+  color: #1a1a1a !important;
+  font-size: 13px !important;
   font-weight: 700 !important;
-  font-size: 0.8rem;
-  line-height: 1.25;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.app-sidebar__brand-role {
-  margin: 0;
-  color: var(--sidebar-brand-muted) !important;
-  font-size: 0.68rem;
-  font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.2 !important;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  opacity: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 148px;
+}
+
+.app-sidebar__user-designation {
+  margin: 0 !important;
+  color: #777777 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 148px;
 }
 
 .app-sidebar__impersonation-note {
@@ -114,7 +131,9 @@ body,
 }
 
 .app-sidebar .app-menu {
-  padding-top: 0;
+  padding-top: 0 !important;
+  padding-bottom: 40px;
+  margin-bottom: 0;
 }
 
 .app-menu > li {
@@ -131,7 +150,7 @@ body,
 .app-sidebar .app-menu__label,
 .app-sidebar .treeview-item,
 .app-sidebar .treeview-indicator {
-  color: var(--white) !important;
+  color: #ffffff !important;
 }
 
 .app-sidebar .app-menu__item,
@@ -140,37 +159,32 @@ body,
 }
 
 .app-sidebar .app-menu__item {
+  position: relative;
   border-left: 4px solid transparent !important;
   border-radius: 0 !important;
   background: transparent !important;
-  padding: 12px 34px 12px 14px !important;
-  min-height: 46px;
-  font-size: 13px !important;
+  padding: 14px 38px 14px 15px !important;
+  min-height: 48px;
+  font-size: 14px !important;
   font-weight: 400;
   gap: 12px;
 }
 
 .app-sidebar .app-menu__icon {
-  flex: 0 0 16px !important;
-  width: 16px !important;
-  min-width: 16px !important;
-  font-size: 14px !important;
+  flex: 0 0 18px !important;
+  width: 18px !important;
+  min-width: 18px !important;
+  font-size: 15px !important;
   line-height: 1 !important;
   text-align: center;
-  opacity: 0.82;
+  opacity: 1;
   margin-right: 0 !important;
 }
 
 .app-sidebar .app-menu__label {
-  font-size: 13px !important;
+  font-size: 14px !important;
   font-weight: 400;
-  line-height: 1.35;
-}
-
-.app-sidebar .app-menu__item.active .app-menu__icon,
-.app-sidebar .app-menu__item:hover .app-menu__icon,
-.app-sidebar .app-menu__item:focus .app-menu__icon {
-  opacity: 1;
+  line-height: 1.3;
 }
 
 .app-sidebar .app-menu__item:hover,
@@ -178,6 +192,7 @@ body,
   background: var(--sidebar-hover-bg) !important;
   border-left-color: var(--brand) !important;
   text-decoration: none;
+  color: #ffffff !important;
 }
 
 .app-sidebar .app-menu__item.active {
@@ -193,10 +208,10 @@ body,
 
 .app-sidebar .treeview-menu {
   background: var(--sidebar-submenu-bg) !important;
-  padding: 6px 0 8px !important;
+  padding: 0 0 6px !important;
   max-height: 0 !important;
   overflow: hidden;
-  transition: max-height 0.65s ease-in-out !important;
+  transition: max-height 0.35s ease !important;
 }
 
 .app-sidebar .treeview.is-expanded .treeview-menu {
@@ -206,68 +221,58 @@ body,
 .app-sidebar .treeview-menu > li {
   padding-left: 0;
   border-bottom: none;
-  margin-bottom: 2px;
-}
-
-.app-sidebar .treeview-menu > li:last-child {
   margin-bottom: 0;
 }
 
 .app-sidebar .treeview-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 12px 9px 34px !important;
-  min-height: 36px;
-  border-left: 3px solid transparent;
-  font-size: 12.5px !important;
-  line-height: 1.35;
-  transition: none !important;
+  gap: 10px;
+  padding: 11px 15px 11px 37px !important;
+  min-height: 40px;
+  border-left: 4px solid transparent !important;
+  font-size: 13px !important;
+  line-height: 1.3;
+  background: transparent !important;
 }
 
-.app-sidebar .treeview-item i,
-.app-sidebar .treeview-item .icon {
-  flex: 0 0 14px !important;
-  width: 14px !important;
-  min-width: 14px !important;
+.app-sidebar .treeview-item .icon,
+.app-sidebar .treeview-item i {
+  flex: 0 0 16px !important;
+  width: 16px !important;
+  min-width: 16px !important;
   margin-right: 0 !important;
-  font-size: 12px !important;
+  font-size: 13px !important;
   line-height: 1 !important;
   text-align: center;
-  color: rgba(255, 255, 255, 0.78) !important;
+  color: #ffffff !important;
   flex-shrink: 0;
-}
-
-.app-sidebar .treeview-item.active i,
-.app-sidebar .treeview-item:hover i,
-.app-sidebar .treeview-item:focus i {
-  color: var(--white) !important;
-  opacity: 1;
 }
 
 .app-sidebar .treeview-item:hover,
 .app-sidebar .treeview-item:focus,
 .app-sidebar .treeview-item.active {
   background: var(--sidebar-active-bg) !important;
-  color: var(--white) !important;
+  color: #ffffff !important;
   border-left-color: var(--brand) !important;
   text-decoration: none;
 }
 
 .app-sidebar .treeview-indicator {
-  position: absolute;
-  right: 14px;
+  position: absolute !important;
+  right: 16px;
   top: 50%;
+  margin-top: 0 !important;
   transform: translateY(-50%);
-  font-size: 12px !important;
+  font-size: 13px !important;
   font-weight: 400;
-  opacity: 0.55;
-  transition: transform 0.35s ease-in-out !important;
+  opacity: 0.7;
+  transition: transform 0.25s ease !important;
 }
 
 .app-sidebar .treeview.is-expanded .treeview-indicator {
   transform: translateY(-50%) rotate(90deg);
-  opacity: 0.75;
+  opacity: 1;
 }
 
 .app-sidebar .treeview > .app-menu__item {
@@ -280,7 +285,7 @@ body,
 }
 
 .app-sidebar a {
-  color: var(--white) !important;
+  color: #ffffff !important;
 }
 
 .btn-primary,
@@ -648,19 +653,21 @@ button.is-loading .app-btn-label {
 }
 
 @media (min-width: 768px) {
-  .sidebar-mini.sidenav-toggled .app-sidebar__brand-info {
-    display: none;
+  .sidebar-mini.sidenav-toggled .app-sidebar__user-name,
+  .sidebar-mini.sidenav-toggled .app-sidebar__user-designation,
+  .sidebar-mini.sidenav-toggled .app-sidebar__impersonation-note {
+    display: none !important;
   }
 
-  .sidebar-mini.sidenav-toggled .app-sidebar__brand {
+  .sidebar-mini.sidenav-toggled .app-sidebar__user {
     justify-content: center;
-    padding: 10px 4px;
+    padding: 12px 4px !important;
   }
 
-  .sidebar-mini.sidenav-toggled .app-sidebar__brand-mark {
-    width: 36px;
-    height: 36px;
-    flex: 0 0 36px;
+  .sidebar-mini.sidenav-toggled .app-sidebar__user-avatar {
+    width: 36px !important;
+    height: 36px !important;
+    flex: 0 0 36px !important;
     font-size: 1.1rem;
   }
 }
@@ -853,4 +860,61 @@ body.modal-open .app-page-loader {
 .sweet-alert button.confirm:focus,
 .sweet-alert button:not(.cancel):focus {
   box-shadow: 0 0 0 0.2rem rgba(var(--brand-rgb), 0.28) !important;
+}
+
+/* Day report filters */
+.day-report-filters__grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) minmax(120px, 0.8fr) minmax(140px, 1fr) minmax(140px, 1fr) auto;
+  gap: 0.85rem 1rem;
+  align-items: end;
+}
+
+.day-report-filters__field {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.day-report-filters__field .control-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.day-report-filters__field .form-control {
+  width: 100%;
+}
+
+.day-report-filters__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 1px;
+}
+
+.day-report-filters__actions .btn {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.day-report-empty .btn {
+  margin-top: 0.35rem;
+}
+
+@media (max-width: 991.98px) {
+  .day-report-filters__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .day-report-filters__actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .day-report-filters__grid {
+    grid-template-columns: 1fr;
+  }
 }

@@ -32,6 +32,23 @@
       @error('description')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 
+    @php
+      $defaultStockReceiving = isset($record)
+        ? $record->stockInReceivingUnits()
+        : 0;
+    @endphp
+    <div class="form-group">
+      <label class="control-label">
+        Current stock
+        <small class="text-muted" id="stockUnitHint">(receiving unit)</small>
+      </label>
+      <input type="number" class="form-control @error('stock_receiving') is-invalid @enderror" name="stock_receiving"
+        id="stockReceivingInput"
+        value="{{ old('stock_receiving', $defaultStockReceiving) }}" min="0" step="any" required>
+      @error('stock_receiving')<div class="invalid-feedback">{{ $message }}</div>@enderror
+      <small class="text-muted">Quantity on hand in the receiving package (e.g. trays, bags).</small>
+    </div>
+
     <div class="form-group">
       <label class="control-label">Reorder level</label>
       <input type="number" class="form-control @error('reorder_level') is-invalid @enderror" name="reorder_level"

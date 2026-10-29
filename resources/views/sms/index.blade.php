@@ -89,6 +89,20 @@
                     <td>
                       @if($message->type === \App\Models\SmsMessage::TYPE_CAKE_POINT)
                         <span class="badge badge-info">Orders</span>
+                      @elseif($message->type === \App\Models\SmsMessage::TYPE_SALE_CONFIRMATION)
+                        <span class="badge badge-primary">Sale confirm</span>
+                      @elseif($message->type === \App\Models\SmsMessage::TYPE_CAKE_READY)
+                        <span class="badge badge-info">Cake ready</span>
+                      @elseif($message->type === \App\Models\SmsMessage::TYPE_BIRTHDAY_WISH)
+                        <span class="badge badge-success">Birthday wish</span>
+                      @elseif($message->type === \App\Models\SmsMessage::TYPE_BIRTHDAY_REMINDER)
+                        <span class="badge badge-warning">Birthday reminder</span>
+                      @elseif($message->type === \App\Models\SmsMessage::TYPE_DAY_CLOSE_SUMMARY)
+                        <span class="badge badge-dark">Day close</span>
+                      @elseif($message->type === \App\Models\SmsMessage::TYPE_PICKUP_REMINDER)
+                        <span class="badge badge-info">Pickup reminder</span>
+                      @elseif($message->type === \App\Models\SmsMessage::TYPE_LOW_STOCK_ALERT)
+                        <span class="badge badge-danger">Low stock</span>
                       @else
                         <span class="badge badge-light">Manual</span>
                       @endif

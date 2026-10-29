@@ -7,6 +7,7 @@ use App\Models\Ingredient;
 use App\Models\Item;
 use App\Models\PaymentProvider;
 use App\Models\Sale;
+use App\Models\SmsMessage;
 use App\Models\User;
 use App\Services\AppSettingsService;
 use App\Services\CakePointService;
@@ -14,6 +15,7 @@ use App\Services\SaleService;
 use App\Services\SmsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -96,7 +98,7 @@ class SaleController extends Controller
 
         if ($request->filled('from')) {
             $cakePointSale = Sale::query()
-                ->with(['items.item'])
+                ->with(['items.item', 'customer'])
                 ->find($request->integer('from'));
 
             if (! $cakePointSale || ! $cakePointSale->canConvertToSale($request->user())) {
@@ -111,6 +113,9 @@ class SaleController extends Controller
                 'customer_name' => $cakePointSale->customer_name,
                 'customer_phone' => $cakePointSale->customer_phone,
                 'notes' => $cakePointSale->notes,
+                'ready_at' => $cakePointSale->ready_at?->format('Y-m-d\TH:i'),
+                'customer_birthday' => $cakePointSale->customer?->birthday?->format('Y-m-d'),
+                'existing_advance' => (float) $cakePointSale->amount_paid,
                 'items' => $cakePointSale->items->map(fn ($line) => [
                     'item_id' => $line->item_id,
                     'quantity' => (float) $line->quantity,
@@ -122,6 +127,8 @@ class SaleController extends Controller
         }
 
         $data['saleFormInitial'] = $data['saleFormInitial'] ?? ['items' => [], 'ingredients' => []];
+        $data['paymentProviderOptions'] = $this->paymentProviderOptions();
+        $data['smsReady'] = $this->sms->isReady();
 
         return view('sales.create', $data);
     }
@@ -129,29 +136,109 @@ class SaleController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $this->validateSalePayload($request);
+        $advanceAmount = (float) ($validated['advance_amount'] ?? 0);
+
+        if ($advanceAmount > 0 && empty($validated['payment_method'])) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Choose a payment method for the amount paid now.');
+        }
+
+        $customerId = isset($validated['customer_id']) ? (int) $validated['customer_id'] : null;
+        $customerId = $this->syncCustomerBirthday(
+            $customerId,
+            $validated['customer_name'] ?? null,
+            $validated['customer_phone'] ?? null,
+            $validated['customer_birthday'] ?? null,
+        );
 
         $sale = $this->sales->create(
             $request->user(),
             collect($validated['items'])->values()->all(),
             $validated['ingredients'],
-            isset($validated['customer_id']) ? (int) $validated['customer_id'] : null,
+            $customerId,
             $validated['customer_name'] ?? null,
             $validated['customer_phone'] ?? null,
             $validated['notes'] ?? null,
             $validated['sold_at'],
+            $validated['ready_at'] ?? null,
         );
 
         if (! empty($validated['cake_point_sale_id'])) {
             $cakePointSale = Sale::query()->find($validated['cake_point_sale_id']);
 
             if ($cakePointSale && $cakePointSale->canConvertToSale($request->user())) {
+                if ((float) $cakePointSale->amount_paid > 0) {
+                    $this->sales->transferPayments($cakePointSale, $sale);
+                }
+
+                if ($cakePointSale->ready_at && ! $sale->ready_at) {
+                    $sale->update(['ready_at' => $cakePointSale->ready_at]);
+                }
+
                 $this->cakePoint->completeFromSale($cakePointSale, $sale);
             }
         }
 
+        $paymentWarning = null;
+        if ($advanceAmount > 0) {
+            $sale->refresh();
+            $balanceDueDate = $validated['credit_repayment_date']
+                ?? ($sale->ready_at?->toDateString() ?: now()->toDateString());
+
+            try {
+                $this->sales->pay(
+                    $request->user(),
+                    $sale,
+                    $advanceAmount,
+                    $validated['payment_method'],
+                    isset($validated['payment_provider_id']) ? (int) $validated['payment_provider_id'] : null,
+                    $validated['payment_reference'] ?? null,
+                    $customerId,
+                    $validated['customer_name'] ?? null,
+                    $validated['customer_phone'] ?? null,
+                    $balanceDueDate,
+                );
+                $sale->refresh();
+            } catch (\Illuminate\Validation\ValidationException $exception) {
+                $paymentWarning = collect($exception->errors())->flatten()->first()
+                    ?: 'Sale saved, but payment could not be recorded.';
+            }
+        }
+
+        $shouldSendCustomerSms = $request->boolean('send_customer_sms');
+        $smsWarning = null;
+        if ($shouldSendCustomerSms) {
+            $sale->loadMissing(['items.item']);
+            $smsWarning = $this->sendCustomerSaleConfirmation($request->user(), $sale, $customerId);
+        }
+
+        $message = "Sale {$sale->sale_number} recorded.";
+        if ($sale->ready_at) {
+            $message .= ' Ready '.$sale->ready_at->format('d M Y H:i').'.';
+        }
+        if ($advanceAmount > 0 && ! $paymentWarning) {
+            $message .= ' Payment '.number_format($advanceAmount, 0).' TZS recorded.';
+        }
+        if ($sale->hasOutstandingBalance()) {
+            $message .= ' Balance due: '.$sale->formattedBalanceDue().'.';
+        }
+        if ($shouldSendCustomerSms && ! $smsWarning) {
+            $message .= ' Confirmation SMS sent to customer.';
+        }
+
+        $warnings = collect([$paymentWarning, $smsWarning])->filter()->implode(' ');
+
+        if ($warnings !== '') {
+            return redirect()
+                ->route('sales.index')
+                ->with('warning', trim($message.' '.$warnings));
+        }
+
         return redirect()
             ->route('sales.index')
-            ->with('success', "Sale {$sale->sale_number} recorded. You can collect payment from the sales list.");
+            ->with('success', $message);
     }
 
     public function show(Sale $sale): View
@@ -199,7 +286,7 @@ class SaleController extends Controller
                 ->with('error', 'Only pending sales can be edited.');
         }
 
-        $sale->load(['items', 'ingredientUsages']);
+        $sale->load(['items', 'ingredientUsages', 'customer']);
 
         $data = $this->formData();
         $usageByIngredient = $sale->ingredientUsages
@@ -235,15 +322,34 @@ class SaleController extends Controller
 
         $validated = $this->validateSalePayload($request);
 
+        $customerId = isset($validated['customer_id']) ? (int) $validated['customer_id'] : null;
+        $customerId = $this->syncCustomerBirthday(
+            $customerId,
+            $validated['customer_name'] ?? null,
+            $validated['customer_phone'] ?? null,
+            $validated['customer_birthday'] ?? null,
+        );
+
+        // Sale forms no longer collect ingredients; keep any existing usage rows on edit.
+        $ingredients = $validated['ingredients'];
+        if ($ingredients === []) {
+            $sale->loadMissing('ingredientUsages');
+            $ingredients = $sale->ingredientUsages->map(fn ($usage) => [
+                'ingredient_id' => (int) $usage->ingredient_id,
+                'quantity_used' => (float) $usage->quantity_used,
+            ])->values()->all();
+        }
+
         $this->sales->update(
             $sale,
             collect($validated['items'])->values()->all(),
-            $validated['ingredients'],
-            isset($validated['customer_id']) ? (int) $validated['customer_id'] : null,
+            $ingredients,
+            $customerId,
             $validated['customer_name'] ?? null,
             $validated['customer_phone'] ?? null,
             $validated['notes'] ?? null,
             $validated['sold_at'],
+            $validated['ready_at'] ?? null,
         );
 
         return redirect()
@@ -329,44 +435,40 @@ class SaleController extends Controller
     /** @return array<string, mixed> */
     private function validateSalePayload(Request $request): array
     {
-        $requireIngredients = $this->salesRequireIngredients();
-
         $validated = $request->validate([
             'cake_point_sale_id' => ['nullable', 'exists:sales,id'],
             'customer_id' => ['nullable', 'exists:customers,id'],
-            'customer_name' => ['nullable', 'string', 'max:255'],
-            'customer_phone' => ['nullable', 'string', 'max:30'],
+            'customer_name' => ['required', 'string', 'max:255'],
+            'customer_phone' => ['required', 'string', 'max:30'],
+            'customer_birthday' => ['nullable', 'date'],
             'sold_at' => ['required', 'date'],
+            'ready_at' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'advance_amount' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
+            'payment_method' => ['nullable', Rule::in(array_keys(Sale::paymentMethodOptions()))],
+            'payment_provider_id' => ['nullable', 'exists:payment_providers,id'],
+            'payment_reference' => ['nullable', 'string', 'max:120'],
+            'credit_repayment_date' => ['nullable', 'date'],
+            'send_customer_sms' => ['nullable', 'boolean'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.item_id' => ['required', 'exists:items,id'],
             'items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:999999999.9999'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0', 'max:999999999.99'],
             'items.*.discount' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
-            'ingredients' => $requireIngredients
-                ? ['required', 'array', 'min:1']
-                : ['nullable', 'array'],
+            'ingredients' => ['nullable', 'array'],
             'ingredients.*.ingredient_id' => ['nullable', 'exists:ingredients,id'],
             'ingredients.*.quantity_used' => ['nullable', 'numeric', 'gt:0', 'max:999999999.9999'],
         ]);
 
-        $ingredients = $this->normalizedIngredientUsages($validated['ingredients'] ?? []);
+        $validated['ingredients'] = $this->normalizedIngredientUsages($validated['ingredients'] ?? []);
 
-        if ($requireIngredients && $ingredients === []) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'ingredients' => 'Add at least one ingredient used for this sale.',
-            ]);
-        }
-
-        foreach ($ingredients as $index => $usage) {
-            if (! isset($usage['ingredient_id']) || ! isset($usage['quantity_used'])) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    "ingredients.{$index}.ingredient_id" => 'Each ingredient row needs an ingredient and quantity used.',
-                ]);
+        if (! empty($validated['customer_id'])) {
+            $customer = Customer::query()->find($validated['customer_id']);
+            if ($customer) {
+                $validated['customer_name'] = $validated['customer_name'] ?: $customer->name;
+                $validated['customer_phone'] = $validated['customer_phone'] ?: $customer->phone;
             }
         }
-
-        $validated['ingredients'] = $ingredients;
 
         return $validated;
     }
@@ -435,9 +537,114 @@ class SaleController extends Controller
                 'id' => $customer->id,
                 'name' => $customer->name,
                 'phone' => $customer->phone,
+                'birthday' => $customer->birthday?->format('Y-m-d'),
                 'label' => $customer->displayLabel(),
             ])->values(),
+            'paymentProviderOptions' => $this->paymentProviderOptions(),
         ];
+    }
+
+    private function sendCustomerSaleConfirmation(User $user, Sale $sale, ?int $customerId): ?string
+    {
+        if (! filled($sale->customer_phone)) {
+            return 'Sale saved, but confirmation SMS was skipped (no customer phone).';
+        }
+
+        if (! $this->sms->isReady()) {
+            return 'Sale saved, but confirmation SMS was not sent (SMS is not enabled or configured).';
+        }
+
+        $phone = $this->sms->normalizePhone($sale->customer_phone);
+
+        if (! $phone) {
+            return 'Sale saved, but confirmation SMS was skipped (invalid customer phone).';
+        }
+
+        $body = $this->sms->buildSaleConfirmationMessage($sale);
+
+        $smsMessage = SmsMessage::create([
+            'created_by_user_id' => $user->id,
+            'recipient_phone' => $phone,
+            'recipient_name' => $sale->customer_name,
+            'recipient_type' => SmsMessage::RECIPIENT_CUSTOMER,
+            'recipient_id' => $customerId,
+            'type' => SmsMessage::TYPE_SALE_CONFIRMATION,
+            'message' => $body,
+            'status' => SmsMessage::STATUS_SENDING,
+            'attempts' => 1,
+            'related_type' => Sale::class,
+            'related_id' => $sale->id,
+        ]);
+
+        try {
+            $response = $this->sms->send($phone, $body);
+            $smsMessage->update([
+                'status' => SmsMessage::STATUS_SENT,
+                'sent_at' => now(),
+                'provider' => $this->sms->currentDriver(),
+                'provider_response' => $response,
+                'last_error' => null,
+            ]);
+
+            return null;
+        } catch (\Throwable $exception) {
+            $smsMessage->update([
+                'status' => SmsMessage::STATUS_FAILED,
+                'last_error' => $exception->getMessage(),
+            ]);
+
+            Log::warning('Sale confirmation SMS failed', [
+                'sale_id' => $sale->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return 'Sale saved, but confirmation SMS failed: '.$exception->getMessage();
+        }
+    }
+
+    private function syncCustomerBirthday(
+        ?int $customerId,
+        ?string $customerName,
+        ?string $customerPhone,
+        ?string $birthday,
+    ): ?int {
+        if (! filled($birthday)) {
+            return $customerId;
+        }
+
+        if ($customerId) {
+            Customer::query()->whereKey($customerId)->update(['birthday' => $birthday]);
+
+            return $customerId;
+        }
+
+        if (! filled($customerPhone)) {
+            return null;
+        }
+
+        $customer = Customer::query()->where('phone', $customerPhone)->first();
+
+        if ($customer) {
+            $customer->update([
+                'birthday' => $birthday,
+                'name' => filled($customerName) ? $customerName : $customer->name,
+            ]);
+
+            return $customer->id;
+        }
+
+        if (! filled($customerName)) {
+            return null;
+        }
+
+        $customer = Customer::create([
+            'name' => $customerName,
+            'phone' => $customerPhone,
+            'birthday' => $birthday,
+            'is_active' => true,
+        ]);
+
+        return $customer->id;
     }
 
     /** @return \Illuminate\Support\Collection<int, array{id: int, name: string, type: string}> */

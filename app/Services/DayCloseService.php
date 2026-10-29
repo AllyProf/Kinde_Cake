@@ -15,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 class DayCloseService
 {
+    public function __construct(private DayCloseOwnerSmsService $dayCloseOwnerSms) {}
+
     /** @return array<string, mixed> */
     public function buildSummary(Carbon $businessDate, ?User $forUser = null): array
     {
@@ -336,7 +338,7 @@ class DayCloseService
 
     public function addExpense(User $user, Carbon $businessDate, string $category, float $amount, ?string $description = null): DayExpense
     {
-        if (! $user->canClosePersonalDay()) {
+        if (! $user->hasPermission('expenses.manage')) {
             abort(403, 'You do not have permission to record expenses.');
         }
 
@@ -381,7 +383,7 @@ class DayCloseService
 
     public function removeExpense(User $user, DayExpense $expense): void
     {
-        if (! $user->canClosePersonalDay()) {
+        if (! $user->hasPermission('expenses.manage')) {
             abort(403, 'You do not have permission to remove expenses.');
         }
 
@@ -653,7 +655,7 @@ class DayCloseService
 
         $summary['staff_closes_count'] = $staffCloses->count();
 
-        return DB::transaction(function () use ($user, $businessDate, $notes, $summary) {
+        $dayClose = DB::transaction(function () use ($user, $businessDate, $notes, $summary) {
             return DayClose::create([
                 'business_date' => $businessDate->toDateString(),
                 'closed_by_user_id' => $user->id,
@@ -662,5 +664,9 @@ class DayCloseService
                 'summary' => $summary,
             ])->load('closedBy');
         });
+
+        $this->dayCloseOwnerSms->notify($dayClose);
+
+        return $dayClose;
     }
 }

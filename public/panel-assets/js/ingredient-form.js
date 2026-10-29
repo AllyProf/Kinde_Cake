@@ -35,6 +35,12 @@
       $('#usagePerReceivingLabelText').text('Qty in 1 unit');
     }
 
+    if (receiving) {
+      $('#stockUnitHint').text('(' + receiving.symbol + ')');
+    } else {
+      $('#stockUnitHint').text('(receiving unit)');
+    }
+
     if (receiving && usage && qty) {
       $summary
         .addClass('is-ready')

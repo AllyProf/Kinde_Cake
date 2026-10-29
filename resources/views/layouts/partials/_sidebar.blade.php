@@ -1,10 +1,10 @@
 @php
   $user = auth()->user();
 
-  $salesOrdersActive = request()->routeIs('sales.*', 'debts.*', 'cake-point.*', 'day-closes.*');
+  $salesOrdersActive = request()->routeIs('sales.*', 'customer-orders.*', 'debts.*', 'cake-point.*', 'day-closes.*');
   $reportsActive = request()->routeIs('day-reports.*', 'business-trends.*');
   $customersSmsActive = request()->routeIs('customers.*', 'sms.*');
-  $inventoryActive = request()->routeIs('ingredients.*', 'receivings.*', 'stock.*');
+  $inventoryActive = request()->routeIs('ingredients.*', 'receivings.*', 'stock.*', 'ingredient-usages.*');
   $catalogActive = request()->routeIs('items.*');
   $adminActive = request()->routeIs('roles.*', 'staff.*', 'audit-logs.*', 'settings.*');
 
@@ -12,25 +12,32 @@
   $canViewCustomers = $user->hasPermission('customers.view');
   $canViewSms = $user->canViewSms();
   $canViewInventory = $user->hasPermission('inventory.view');
+  $canViewReports = $user->hasPermission('reports.view');
+  $canViewCatalog = $user->hasPermission('catalog.view') || $user->hasPermission('catalog.manage');
+  $canViewStaff = $user->hasPermission('staff.view') || $user->hasPermission('staff.manage');
+  $canManageRoles = $user->hasPermission('roles.manage');
+  $canViewAudit = $user->hasPermission('audit.view');
+  $canViewSettings = $user->hasPermission('settings.view') || $user->hasPermission('settings.manage');
   $isOwner = $user->isOwner();
+  $canViewFinancials = $isOwner || $canViewReports;
+  $canViewDebts = $canViewFinancials || $user->hasPermission('orders.create');
 
   $showSalesOrders = $canViewOrders;
   $showCustomersSms = $canViewCustomers || $canViewSms;
-  $showReports = $isOwner;
-  $showCatalog = $isOwner;
-  $showAdministration = $isOwner;
+  $showReports = $canViewReports;
+  $showCatalog = $canViewCatalog;
+  $showAdministration = $canViewStaff || $canManageRoles || $canViewAudit || $canViewSettings || $isOwner;
 
-  $businessName = app(\App\Services\AppSettingsService::class)->get('business_name', config('app.name', 'Kinde Cake'));
-  $businessInitial = mb_strtoupper(mb_substr(trim($businessName ?: 'K'), 0, 1));
+  $userInitial = mb_strtoupper(mb_substr(trim($user->name ?: 'U'), 0, 1));
 @endphp
 
 <div class="app-sidebar__overlay" data-toggle="sidebar"></div>
 <aside class="app-sidebar">
-  <div class="app-sidebar__brand">
-    <div class="app-sidebar__brand-mark" aria-hidden="true">{{ $businessInitial }}</div>
-    <div class="app-sidebar__brand-info">
-      <p class="app-sidebar__brand-name">{{ $businessName }}</p>
-      <p class="app-sidebar__brand-role">{{ $user->roleLabel() }}</p>
+  <div class="app-sidebar__user">
+    <div class="app-sidebar__user-avatar" aria-hidden="true">{{ $userInitial }}</div>
+    <div>
+      <p class="app-sidebar__user-name">{{ $user->name }}</p>
+      <p class="app-sidebar__user-designation">{{ $user->roleLabel() }}</p>
       @if(\App\Models\User::isImpersonating())
         <p class="app-sidebar__impersonation-note">
           <i class="fa fa-user-secret"></i> Impersonating
@@ -40,7 +47,6 @@
   </div>
 
   <ul class="app-menu">
-    {{-- Overview --}}
     <li>
       <a class="app-menu__item {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
         <i class="app-menu__icon fa fa-dashboard"></i>
@@ -48,7 +54,38 @@
       </a>
     </li>
 
-    {{-- Sales & Orders --}}
+    @if($canViewInventory)
+      <li class="treeview {{ $inventoryActive ? 'is-expanded' : '' }}">
+        <a class="app-menu__item" href="#" data-toggle="treeview">
+          <i class="app-menu__icon fa fa-cubes"></i>
+          <span class="app-menu__label">Inventory</span>
+          <i class="treeview-indicator fa fa-angle-right"></i>
+        </a>
+        <ul class="treeview-menu">
+          <li>
+            <a class="treeview-item {{ request()->routeIs('stock.*') ? 'active' : '' }}" href="{{ route('stock.index') }}">
+              <i class="fa fa-cubes"></i> Stock
+            </a>
+          </li>
+          <li>
+            <a class="treeview-item {{ request()->routeIs('ingredients.*') ? 'active' : '' }}" href="{{ route('ingredients.index') }}">
+              <i class="fa fa-leaf"></i> Ingredients
+            </a>
+          </li>
+          <li>
+            <a class="treeview-item {{ request()->routeIs('receivings.*') ? 'active' : '' }}" href="{{ route('receivings.index') }}">
+              <i class="fa fa-truck"></i> Receiving
+            </a>
+          </li>
+          <li>
+            <a class="treeview-item {{ request()->routeIs('ingredient-usages.*') ? 'active' : '' }}" href="{{ route('ingredient-usages.index') }}">
+              <i class="fa fa-flask"></i> Usage log
+            </a>
+          </li>
+        </ul>
+      </li>
+    @endif
+
     @if($showSalesOrders)
       @php
         $cakePointMenuCount = (int) (collect($appNotifications ?? [])->firstWhere('icon', 'fa-birthday-cake')['count'] ?? 0);
@@ -69,18 +106,25 @@
             </a>
           </li>
           <li>
+            <a class="treeview-item {{ request()->routeIs('customer-orders.*') ? 'active' : '' }}" href="{{ route('customer-orders.index') }}">
+              <i class="fa fa-calendar-check-o"></i> Customer Orders
+            </a>
+          </li>
+          <li>
             <a class="treeview-item {{ request()->routeIs('cake-point.*') ? 'active' : '' }}" href="{{ route('cake-point.index') }}">
-              <i class="fa fa-birthday-cake"></i> Orders
+              <i class="fa fa-birthday-cake"></i> Cake Point
               @if($cakePointMenuCount > 0)
                 <span class="badge badge-warning ml-1">{{ $cakePointMenuCount > 9 ? '9+' : $cakePointMenuCount }}</span>
               @endif
             </a>
           </li>
-          <li>
-            <a class="treeview-item {{ request()->routeIs('debts.*') ? 'active' : '' }}" href="{{ route('debts.index') }}">
-              <i class="fa fa-credit-card"></i> Debt Management
-            </a>
-          </li>
+          @if($canViewDebts)
+            <li>
+              <a class="treeview-item {{ request()->routeIs('debts.*') ? 'active' : '' }}" href="{{ route('debts.index') }}">
+                <i class="fa fa-credit-card"></i> Debt Management
+              </a>
+            </li>
+          @endif
           <li>
             <a class="treeview-item {{ request()->routeIs('day-closes.*') ? 'active' : '' }}" href="{{ route('day-closes.index') }}">
               <i class="fa fa-calendar-check-o"></i> Close Day
@@ -90,7 +134,6 @@
       </li>
     @endif
 
-    {{-- Reports & Analytics --}}
     @if($showReports)
       <li class="treeview {{ $reportsActive ? 'is-expanded' : '' }}">
         <a class="app-menu__item" href="#" data-toggle="treeview">
@@ -113,7 +156,6 @@
       </li>
     @endif
 
-    {{-- Customers & Communication --}}
     @if($showCustomersSms)
       <li class="treeview {{ $customersSmsActive ? 'is-expanded' : '' }}">
         <a class="app-menu__item" href="#" data-toggle="treeview">
@@ -140,35 +182,6 @@
       </li>
     @endif
 
-    {{-- Inventory --}}
-    @if($canViewInventory)
-      <li class="treeview {{ $inventoryActive ? 'is-expanded' : '' }}">
-        <a class="app-menu__item" href="#" data-toggle="treeview">
-          <i class="app-menu__icon fa fa-archive"></i>
-          <span class="app-menu__label">Inventory</span>
-          <i class="treeview-indicator fa fa-angle-right"></i>
-        </a>
-        <ul class="treeview-menu">
-          <li>
-            <a class="treeview-item {{ request()->routeIs('stock.*') ? 'active' : '' }}" href="{{ route('stock.index') }}">
-              <i class="fa fa-cubes"></i> Stock
-            </a>
-          </li>
-          <li>
-            <a class="treeview-item {{ request()->routeIs('ingredients.*') ? 'active' : '' }}" href="{{ route('ingredients.index') }}">
-              <i class="fa fa-leaf"></i> Ingredients
-            </a>
-          </li>
-          <li>
-            <a class="treeview-item {{ request()->routeIs('receivings.*') ? 'active' : '' }}" href="{{ route('receivings.index') }}">
-              <i class="fa fa-truck"></i> Receiving
-            </a>
-          </li>
-        </ul>
-      </li>
-    @endif
-
-    {{-- Product Catalog --}}
     @if($showCatalog)
       <li class="treeview {{ $catalogActive ? 'is-expanded' : '' }}">
         <a class="app-menu__item" href="#" data-toggle="treeview">
@@ -186,7 +199,6 @@
       </li>
     @endif
 
-    {{-- Administration --}}
     @if($showAdministration)
       <li class="treeview {{ $adminActive ? 'is-expanded' : '' }}">
         <a class="app-menu__item" href="#" data-toggle="treeview">
@@ -195,26 +207,34 @@
           <i class="treeview-indicator fa fa-angle-right"></i>
         </a>
         <ul class="treeview-menu">
-          <li>
-            <a class="treeview-item {{ request()->routeIs('staff.*') ? 'active' : '' }}" href="{{ route('staff.index') }}">
-              <i class="fa fa-user"></i> Staff
-            </a>
-          </li>
-          <li>
-            <a class="treeview-item {{ request()->routeIs('roles.*') ? 'active' : '' }}" href="{{ route('roles.index') }}">
-              <i class="fa fa-shield"></i> Roles & Permissions
-            </a>
-          </li>
-          <li>
-            <a class="treeview-item {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}" href="{{ route('audit-logs.index') }}">
-              <i class="fa fa-history"></i> Audit Logs
-            </a>
-          </li>
-          <li>
-            <a class="treeview-item {{ request()->routeIs('settings.*') ? 'active' : '' }}" href="{{ route('settings.index') }}">
-              <i class="fa fa-sliders"></i> Settings
-            </a>
-          </li>
+          @if($canViewStaff)
+            <li>
+              <a class="treeview-item {{ request()->routeIs('staff.*') ? 'active' : '' }}" href="{{ route('staff.index') }}">
+                <i class="fa fa-user"></i> Staff
+              </a>
+            </li>
+          @endif
+          @if($canManageRoles)
+            <li>
+              <a class="treeview-item {{ request()->routeIs('roles.*') ? 'active' : '' }}" href="{{ route('roles.index') }}">
+                <i class="fa fa-shield"></i> Roles & Permissions
+              </a>
+            </li>
+          @endif
+          @if($canViewAudit)
+            <li>
+              <a class="treeview-item {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}" href="{{ route('audit-logs.index') }}">
+                <i class="fa fa-history"></i> Audit Logs
+              </a>
+            </li>
+          @endif
+          @if($canViewSettings)
+            <li>
+              <a class="treeview-item {{ request()->routeIs('settings.*') ? 'active' : '' }}" href="{{ route('settings.index') }}">
+                <i class="fa fa-sliders"></i> Settings
+              </a>
+            </li>
+          @endif
         </ul>
       </li>
     @endif

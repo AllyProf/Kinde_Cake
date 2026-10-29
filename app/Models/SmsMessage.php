@@ -22,11 +22,27 @@ class SmsMessage extends Model
 
     public const TYPE_CAKE_POINT = 'cake_point';
 
+    public const TYPE_SALE_CONFIRMATION = 'sale_confirmation';
+
+    public const TYPE_CAKE_READY = 'cake_ready';
+
+    public const TYPE_BIRTHDAY_WISH = 'birthday_wish';
+
+    public const TYPE_BIRTHDAY_REMINDER = 'birthday_reminder';
+
+    public const TYPE_DAY_CLOSE_SUMMARY = 'day_close_summary';
+
+    public const TYPE_PICKUP_REMINDER = 'pickup_reminder';
+
+    public const TYPE_LOW_STOCK_ALERT = 'low_stock_alert';
+
     public const RECIPIENT_MANUAL = 'manual';
 
     public const RECIPIENT_CUSTOMER = 'customer';
 
     public const RECIPIENT_STAFF = 'staff';
+
+    public const RECIPIENT_OWNER = 'owner';
 
     protected $fillable = [
         'created_by_user_id',

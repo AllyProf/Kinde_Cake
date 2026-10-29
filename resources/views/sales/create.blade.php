@@ -19,8 +19,8 @@
         <div class="tile-title-w-btn">
           <div></div>
           <p>
-            <button type="button" class="btn btn-secondary icon-btn" data-toggle="modal" data-target="#customerModal">
-              <i class="fa fa-user"></i> Customer
+            <button type="button" class="btn btn-primary icon-btn" data-toggle="modal" data-target="#customerModal">
+              <i class="fa fa-user"></i> Customer <span class="text-warning">*</span>
             </button>
           </p>
         </div>
@@ -35,12 +35,14 @@
               @endif
             </div>
           @else
-            @if($errors->has('ingredients') || $errors->has('items'))
-              <div class="alert alert-danger">{{ $errors->first('ingredients') ?: $errors->first('items') }}</div>
+            @if($errors->has('items') || $errors->has('customer_name') || $errors->has('customer_phone'))
+              <div class="alert alert-danger">
+                {{ $errors->first('customer_name') ?: ($errors->first('customer_phone') ?: $errors->first('items')) }}
+              </div>
             @endif
 
-            <div class="sale-customer-chip mb-3" id="customerChip">
-              <i class="fa fa-user"></i> <span id="customerChipText">Walk-in customer</span>
+            <div class="sale-customer-chip mb-3 {{ filled(old('customer_name', $saleFormInitial['customer_name'] ?? '')) && filled(old('customer_phone', $saleFormInitial['customer_phone'] ?? '')) ? 'is-complete' : 'is-missing' }}" id="customerChip" role="button" data-toggle="modal" data-target="#customerModal" style="cursor:pointer;">
+              <i class="fa fa-user"></i> <span id="customerChipText">Customer required — tap Customer</span>
             </div>
 
             <form action="{{ route('sales.store') }}" method="POST" id="saleForm">
@@ -50,12 +52,7 @@
                 <div class="alert alert-info">
                   <i class="fa fa-birthday-cake"></i>
                   Creating sale from order <strong>{{ $cakePointSale->sale_number }}</strong>.
-                  Customer and items are pre-filled
-                  @if($requireIngredients)
-                    — add ingredients used, then save.
-                  @else
-                    — ingredients are optional. Save when ready.
-                  @endif
+                  Customer and items are pre-filled — save when ready.
                 </div>
               @endif
               <input type="hidden" name="customer_id" id="customerIdInput" value="{{ old('customer_id', $saleFormInitial['customer_id'] ?? '') }}">
@@ -85,39 +82,136 @@
                 </table>
               </div>
 
-              <div class="d-flex justify-content-between align-items-center mb-2 sale-form-section-head">
-                <h5 class="mb-0">
-                  Ingredients used
-                  @unless($requireIngredients)
-                    <small class="text-muted font-weight-normal">(optional)</small>
-                  @endunless
-                </h5>
-                <button type="button" class="btn btn-sm btn-outline-primary" id="addIngredientRow">
-                  <i class="fa fa-plus"></i> Add
-                </button>
-              </div>
-              <div class="table-responsive mb-3 sale-form-list">
-                <table class="table table-bordered mb-0 sale-form-table detail-card-table" id="ingredientsTable">
-                  <thead>
-                    <tr>
-                      <th>Ingredient</th>
-                      <th class="sale-form-col-qty">Qty used</th>
-                      <th class="sale-form-col-stock">In stock</th>
-                      <th class="sale-form-col-actions"></th>
-                    </tr>
-                  </thead>
-                  <tbody id="ingredientsBody"></tbody>
-                </table>
-              </div>
-
               <div class="sale-total-bar mb-3">
                 Total: <span id="saleGrandTotal">0 TZS</span>
               </div>
 
+              @php
+                $existingAdvance = (float) ($saleFormInitial['existing_advance'] ?? 0);
+              @endphp
+
+              <h5 class="mb-3">Pickup &amp; payment</h5>
+              <div class="row">
+                <div class="col-12 col-lg-4 col-md-6">
+                  <div class="form-group">
+                    <label class="control-label" for="saleReadyAt">Ready / pickup date</label>
+                    <input type="datetime-local" class="form-control @error('ready_at') is-invalid @enderror"
+                      id="saleReadyAt" name="ready_at"
+                      value="{{ old('ready_at', $saleFormInitial['ready_at'] ?? '') }}">
+                    @error('ready_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <small class="text-muted">When the cake / order should be ready.</small>
+                  </div>
+                </div>
+                <div class="col-12 col-lg-4 col-md-6">
+                  <div class="form-group">
+                    <label class="control-label" for="saleCustomerBirthday">Customer birthday</label>
+                    <input type="date" class="form-control @error('customer_birthday') is-invalid @enderror"
+                      id="saleCustomerBirthday" name="customer_birthday"
+                      value="{{ old('customer_birthday', $saleFormInitial['customer_birthday'] ?? '') }}">
+                    @error('customer_birthday')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <small class="text-muted">For birthday wish &amp; reminder SMS.</small>
+                  </div>
+                </div>
+                <div class="col-12 col-lg-4 col-md-6">
+                  <div class="form-group">
+                    <label class="control-label" for="saleAdvanceAmount">Pay now / advance (TZS)</label>
+                    <input type="number" class="form-control @error('advance_amount') is-invalid @enderror"
+                      id="saleAdvanceAmount" name="advance_amount" min="0" step="1"
+                      value="{{ old('advance_amount', 0) }}" placeholder="0">
+                    @error('advance_amount')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <small class="text-muted">0 = pay later. Enter full total to mark paid in full.</small>
+                  </div>
+                </div>
+              </div>
+
+              @if($existingAdvance > 0)
+                <div class="alert alert-info py-2">
+                  <i class="fa fa-info-circle"></i>
+                  This order already has an advance of <strong>{{ number_format($existingAdvance, 0) }} TZS</strong>
+                  that will move to this sale. Enter an extra amount above only if the customer pays more now.
+                </div>
+              @endif
+
+              <div class="row js-sale-payment-fields">
+                <div class="col-12 col-lg-4 col-md-6">
+                  <div class="form-group">
+                    <label class="control-label" for="salePaymentMethod">Payment method</label>
+                    <select class="form-control @error('payment_method') is-invalid @enderror"
+                      id="salePaymentMethod" name="payment_method">
+                      <option value="">Select...</option>
+                      @foreach(\App\Models\Sale::paymentMethodOptions() as $value => $label)
+                        @if($value !== \App\Models\Sale::PAYMENT_CREDIT)
+                          <option value="{{ $value }}" @selected(old('payment_method') === $value)>{{ $label }}</option>
+                        @endif
+                      @endforeach
+                    </select>
+                    @error('payment_method')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  </div>
+                </div>
+                <div class="col-12 col-lg-4 col-md-6 js-sale-provider-field d-none">
+                  <div class="form-group">
+                    <label class="control-label" for="salePaymentProvider">Provider</label>
+                    <select class="form-control @error('payment_provider_id') is-invalid @enderror"
+                      id="salePaymentProvider" name="payment_provider_id">
+                      <option value="">Select...</option>
+                      @foreach($paymentProviderOptions as $provider)
+                        <option value="{{ $provider['id'] }}" data-type="{{ $provider['type'] }}"
+                          @selected(old('payment_provider_id') == $provider['id'])>
+                          {{ $provider['name'] }}
+                        </option>
+                      @endforeach
+                    </select>
+                    @error('payment_provider_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  </div>
+                </div>
+                <div class="col-12 col-lg-4 col-md-6 js-sale-reference-field d-none">
+                  <div class="form-group">
+                    <label class="control-label" for="salePaymentReference">Reference</label>
+                    <input type="text" class="form-control @error('payment_reference') is-invalid @enderror"
+                      id="salePaymentReference" name="payment_reference"
+                      value="{{ old('payment_reference') }}" maxlength="120">
+                    @error('payment_reference')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  </div>
+                </div>
+                <div class="col-12 col-lg-4 col-md-6 js-sale-balance-due-field d-none">
+                  <div class="form-group">
+                    <label class="control-label" for="saleCreditRepaymentDate">Balance due date</label>
+                    <input type="date" class="form-control @error('credit_repayment_date') is-invalid @enderror"
+                      id="saleCreditRepaymentDate" name="credit_repayment_date"
+                      value="{{ old('credit_repayment_date') }}">
+                    @error('credit_repayment_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <small class="text-muted">Defaults to ready / pickup date when left blank.</small>
+                  </div>
+                </div>
+              </div>
+
               <div class="form-group">
                 <label class="control-label">Notes</label>
-                <textarea class="form-control @error('notes') is-invalid @enderror" name="notes" rows="2">{{ old('notes', $saleFormInitial['notes'] ?? '') }}</textarea>
+                <textarea class="form-control @error('notes') is-invalid @enderror" name="notes" rows="2"
+                  placeholder="Size, flavor, pickup notes...">{{ old('notes', $saleFormInitial['notes'] ?? '') }}</textarea>
                 @error('notes')<div class="invalid-feedback">{{ $message }}</div>@enderror
+              </div>
+
+              <div class="form-group">
+                @if($smsReady ?? false)
+                  <input type="hidden" name="send_customer_sms" value="0">
+                  <div class="form-check">
+                    <label class="form-check-label">
+                      <input type="checkbox" class="form-check-input" name="send_customer_sms" value="1"
+                        @checked(old('send_customer_sms', '1') == '1')>
+                      Send confirmation SMS to customer
+                    </label>
+                  </div>
+                  <small class="text-muted">Customer will receive an order confirmation on their phone after you save.</small>
+                @else
+                  <div class="form-check">
+                    <label class="form-check-label">
+                      <input type="checkbox" class="form-check-input" disabled>
+                      Send confirmation SMS to customer
+                    </label>
+                  </div>
+                  <small class="text-muted">Configure SMS in Settings to enable customer confirmation messages.</small>
+                @endif
               </div>
 
               <div class="tile-footer px-0 pb-0 sale-form-footer">
@@ -127,11 +221,7 @@
                 <a class="btn btn-secondary" href="{{ route('sales.index') }}">Cancel</a>
               </div>
               <small class="text-muted d-block mt-2" id="saleSubmitHint">
-                @if($requireIngredients)
-                  Add at least one item and one ingredient to save.
-                @else
-                  Add at least one item to save.
-                @endif
+                Add customer details and at least one item to save.
               </small>
             </form>
           @endif
@@ -150,12 +240,16 @@
           </button>
         </div>
         <div class="modal-body">
+          <div id="customerModalError" class="alert alert-danger py-2 d-none"></div>
           <div class="form-group">
             <label class="control-label">Select customer</label>
             <select class="form-control" id="modalCustomerSelect">
-              <option value="">Walk-in / new</option>
+              <option value="">New customer</option>
               @foreach($customers as $customer)
-                <option value="{{ $customer->id }}" data-name="{{ $customer->name }}" data-phone="{{ $customer->phone }}">
+                <option value="{{ $customer->id }}"
+                  data-name="{{ $customer->name }}"
+                  data-phone="{{ $customer->phone }}"
+                  data-birthday="{{ $customer->birthday?->format('Y-m-d') }}">
                   {{ $customer->displayLabel() }}
                 </option>
               @endforeach
@@ -165,11 +259,11 @@
             @endif
           </div>
           <div class="form-group">
-            <label class="control-label">Name</label>
-            <input type="text" class="form-control" id="modalCustomerName" maxlength="255" placeholder="Optional">
+            <label class="control-label">Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="modalCustomerName" maxlength="255" placeholder="Customer name" required>
           </div>
           <div class="form-group">
-            <label class="control-label">Phone</label>
+            <label class="control-label">Phone <span class="text-danger">*</span></label>
             <div class="input-group tz-phone-group">
               <div class="input-group-prepend">
                 <span class="input-group-text tz-phone-prefix">
@@ -182,7 +276,8 @@
                 placeholder="7XX XXX XXX"
                 inputmode="numeric"
                 maxlength="9"
-                autocomplete="tel-national">
+                autocomplete="tel-national"
+                required>
               <input type="hidden" id="modalCustomerPhoneFull" value="">
             </div>
           </div>
@@ -211,6 +306,19 @@
       background: #f4f5f7;
       border-radius: 4px;
       font-size: 0.9rem;
+      border: 1px solid transparent;
+    }
+
+    .sale-customer-chip.is-missing {
+      background: #fff3cd;
+      border-color: #ffeeba;
+      color: #856404;
+    }
+
+    .sale-customer-chip.is-complete {
+      background: #e8f5e9;
+      border-color: #c8e6c9;
+      color: #2e7d32;
     }
 
     .sale-total-bar {
@@ -230,15 +338,26 @@
       width: 100% !important;
     }
 
+    #saleItemsTable .js-item-qty,
+    #saleItemsTable .js-item-discount {
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+
+    #saleItemsTable .js-item-qty::-webkit-inner-spin-button,
+    #saleItemsTable .js-item-qty::-webkit-outer-spin-button,
+    #saleItemsTable .js-item-discount::-webkit-inner-spin-button,
+    #saleItemsTable .js-item-discount::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
     @media (min-width: 768px) {
       #saleItemsTable .sale-form-col-qty { width: 100px; }
       #saleItemsTable .sale-form-col-price { width: 130px; }
       #saleItemsTable .sale-form-col-discount { width: 130px; }
       #saleItemsTable .sale-form-col-total { width: 130px; }
       #saleItemsTable .sale-form-col-actions { width: 50px; }
-      #ingredientsTable .sale-form-col-qty { width: 160px; }
-      #ingredientsTable .sale-form-col-stock { width: 120px; }
-      #ingredientsTable .sale-form-col-actions { width: 50px; }
     }
 
     .tz-phone-prefix {
@@ -262,11 +381,82 @@
   <script>
     window.saleFormData = {
       items: @json($itemOptions),
-      ingredients: @json($ingredientOptions),
+      ingredients: [],
       customers: @json($customerOptions),
-      requireIngredients: @json((bool) $requireIngredients),
+      requireIngredients: false,
     };
     window.saleFormInitial = @json($saleFormInitial ?? ['items' => [], 'ingredients' => []]);
+    window.salesPaymentProviders = @json($paymentProviderOptions);
   </script>
   <script src="{{ asset('panel-assets/js/sale-form.js') }}"></script>
+  <script>
+    (function () {
+      var advanceAmount = document.getElementById('saleAdvanceAmount');
+      var paymentMethod = document.getElementById('salePaymentMethod');
+      var providerField = document.querySelector('.js-sale-provider-field');
+      var referenceField = document.querySelector('.js-sale-reference-field');
+      var balanceDueField = document.querySelector('.js-sale-balance-due-field');
+      var providerSelect = document.getElementById('salePaymentProvider');
+      var readyAt = document.getElementById('saleReadyAt');
+      var balanceDue = document.getElementById('saleCreditRepaymentDate');
+      var birthdayInput = document.getElementById('saleCustomerBirthday');
+      var customerSelect = document.getElementById('modalCustomerSelect');
+
+      function syncPaymentFields() {
+        var amount = parseFloat(advanceAmount && advanceAmount.value) || 0;
+        var method = paymentMethod ? paymentMethod.value : '';
+        var needsProvider = method === 'mobile' || method === 'bank';
+        var mayLeaveBalance = amount > 0;
+
+        if (paymentMethod) {
+          paymentMethod.required = amount > 0;
+        }
+        if (providerField) {
+          providerField.classList.toggle('d-none', !needsProvider);
+        }
+        if (referenceField) {
+          referenceField.classList.toggle('d-none', !needsProvider);
+        }
+        if (balanceDueField) {
+          balanceDueField.classList.toggle('d-none', !mayLeaveBalance);
+        }
+
+        if (providerSelect && window.salesPaymentProviders) {
+          var options = providerSelect.querySelectorAll('option[data-type]');
+          options.forEach(function (option) {
+            var show = !needsProvider || option.getAttribute('data-type') === method;
+            option.hidden = !show;
+            if (!show && option.selected) {
+              providerSelect.value = '';
+            }
+          });
+        }
+
+        if (mayLeaveBalance && balanceDue && !balanceDue.value && readyAt && readyAt.value) {
+          balanceDue.value = readyAt.value.slice(0, 10);
+        }
+      }
+
+      if (advanceAmount) {
+        advanceAmount.addEventListener('input', syncPaymentFields);
+      }
+      if (paymentMethod) {
+        paymentMethod.addEventListener('change', syncPaymentFields);
+      }
+      if (readyAt) {
+        readyAt.addEventListener('change', syncPaymentFields);
+      }
+
+      if (customerSelect && birthdayInput) {
+        customerSelect.addEventListener('change', function () {
+          var option = customerSelect.options[customerSelect.selectedIndex];
+          if (option && option.dataset.birthday) {
+            birthdayInput.value = option.dataset.birthday;
+          }
+        });
+      }
+
+      syncPaymentFields();
+    })();
+  </script>
 @endpush

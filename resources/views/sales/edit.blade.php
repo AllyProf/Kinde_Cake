@@ -19,18 +19,20 @@
         <div class="tile-title-w-btn">
           <div></div>
           <p>
-            <button type="button" class="btn btn-secondary icon-btn" data-toggle="modal" data-target="#customerModal">
-              <i class="fa fa-user"></i> Customer
+            <button type="button" class="btn btn-primary icon-btn" data-toggle="modal" data-target="#customerModal">
+              <i class="fa fa-user"></i> Customer <span class="text-warning">*</span>
             </button>
           </p>
         </div>
         <div class="tile-body">
-          @if($errors->has('ingredients') || $errors->has('items') || $errors->has('sale'))
-            <div class="alert alert-danger">{{ $errors->first('ingredients') ?: ($errors->first('items') ?: $errors->first('sale')) }}</div>
+          @if($errors->has('items') || $errors->has('sale') || $errors->has('customer_name') || $errors->has('customer_phone'))
+            <div class="alert alert-danger">
+              {{ $errors->first('customer_name') ?: ($errors->first('customer_phone') ?: ($errors->first('items') ?: $errors->first('sale'))) }}
+            </div>
           @endif
 
-          <div class="sale-customer-chip mb-3" id="customerChip">
-            <i class="fa fa-user"></i> <span id="customerChipText">Walk-in customer</span>
+          <div class="sale-customer-chip mb-3 {{ filled(old('customer_name', $sale->customer_name)) && filled(old('customer_phone', $sale->customer_phone)) ? 'is-complete' : 'is-missing' }}" id="customerChip" role="button" data-toggle="modal" data-target="#customerModal" style="cursor:pointer;">
+            <i class="fa fa-user"></i> <span id="customerChipText">Customer required — tap Customer</span>
           </div>
 
           <form action="{{ route('sales.update', $sale) }}" method="POST" id="saleForm">
@@ -63,33 +65,30 @@
               </table>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center mb-2 sale-form-section-head">
-              <h5 class="mb-0">
-                Ingredients used
-                @unless($requireIngredients)
-                  <small class="text-muted font-weight-normal">(optional)</small>
-                @endunless
-              </h5>
-              <button type="button" class="btn btn-sm btn-outline-primary" id="addIngredientRow">
-                <i class="fa fa-plus"></i> Add
-              </button>
-            </div>
-            <div class="table-responsive mb-3 sale-form-list">
-              <table class="table table-bordered mb-0 sale-form-table detail-card-table" id="ingredientsTable">
-                <thead>
-                  <tr>
-                    <th>Ingredient</th>
-                    <th class="sale-form-col-qty">Qty used</th>
-                    <th class="sale-form-col-stock">In stock</th>
-                    <th class="sale-form-col-actions"></th>
-                  </tr>
-                </thead>
-                <tbody id="ingredientsBody"></tbody>
-              </table>
-            </div>
-
             <div class="sale-total-bar mb-3">
               Total: <span id="saleGrandTotal">0 TZS</span>
+            </div>
+
+            <h5 class="mb-3">Pickup &amp; customer</h5>
+            <div class="row">
+              <div class="col-12 col-lg-4 col-md-6">
+                <div class="form-group">
+                  <label class="control-label" for="saleReadyAt">Ready / pickup date</label>
+                  <input type="datetime-local" class="form-control @error('ready_at') is-invalid @enderror"
+                    id="saleReadyAt" name="ready_at"
+                    value="{{ old('ready_at', $sale->ready_at?->format('Y-m-d\TH:i')) }}">
+                  @error('ready_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+              </div>
+              <div class="col-12 col-lg-4 col-md-6">
+                <div class="form-group">
+                  <label class="control-label" for="saleCustomerBirthday">Customer birthday</label>
+                  <input type="date" class="form-control @error('customer_birthday') is-invalid @enderror"
+                    id="saleCustomerBirthday" name="customer_birthday"
+                    value="{{ old('customer_birthday', $sale->customer?->birthday?->format('Y-m-d')) }}">
+                  @error('customer_birthday')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+              </div>
             </div>
 
             <div class="form-group">
@@ -105,11 +104,7 @@
               <a class="btn btn-secondary" href="{{ route('sales.index') }}">Back</a>
             </div>
             <small class="text-muted d-block mt-2" id="saleSubmitHint">
-              @if($requireIngredients)
-                Add at least one item and one ingredient to save.
-              @else
-                Add at least one item to save.
-              @endif
+              Add customer details and at least one item to save.
             </small>
           </form>
         </div>
@@ -127,23 +122,27 @@
           </button>
         </div>
         <div class="modal-body">
+          <div id="customerModalError" class="alert alert-danger py-2 d-none"></div>
           <div class="form-group">
             <label class="control-label">Select customer</label>
             <select class="form-control" id="modalCustomerSelect">
-              <option value="">Walk-in / new</option>
+              <option value="">New customer</option>
               @foreach($customers as $customer)
-                <option value="{{ $customer->id }}" data-name="{{ $customer->name }}" data-phone="{{ $customer->phone }}">
+                <option value="{{ $customer->id }}"
+                  data-name="{{ $customer->name }}"
+                  data-phone="{{ $customer->phone }}"
+                  data-birthday="{{ $customer->birthday?->format('Y-m-d') }}">
                   {{ $customer->displayLabel() }}
                 </option>
               @endforeach
             </select>
           </div>
           <div class="form-group">
-            <label class="control-label">Name</label>
-            <input type="text" class="form-control" id="modalCustomerName" maxlength="255" placeholder="Optional">
+            <label class="control-label">Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="modalCustomerName" maxlength="255" placeholder="Customer name" required>
           </div>
           <div class="form-group">
-            <label class="control-label">Phone</label>
+            <label class="control-label">Phone <span class="text-danger">*</span></label>
             <div class="input-group tz-phone-group">
               <div class="input-group-prepend">
                 <span class="input-group-text tz-phone-prefix">
@@ -156,7 +155,8 @@
                 placeholder="7XX XXX XXX"
                 inputmode="numeric"
                 maxlength="9"
-                autocomplete="tel-national">
+                autocomplete="tel-national"
+                required>
               <input type="hidden" id="modalCustomerPhoneFull" value="">
             </div>
           </div>
@@ -185,6 +185,19 @@
       background: #f4f5f7;
       border-radius: 4px;
       font-size: 0.9rem;
+      border: 1px solid transparent;
+    }
+
+    .sale-customer-chip.is-missing {
+      background: #fff3cd;
+      border-color: #ffeeba;
+      color: #856404;
+    }
+
+    .sale-customer-chip.is-complete {
+      background: #e8f5e9;
+      border-color: #c8e6c9;
+      color: #2e7d32;
     }
 
     .sale-total-bar {
@@ -204,15 +217,26 @@
       width: 100% !important;
     }
 
+    #saleItemsTable .js-item-qty,
+    #saleItemsTable .js-item-discount {
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+
+    #saleItemsTable .js-item-qty::-webkit-inner-spin-button,
+    #saleItemsTable .js-item-qty::-webkit-outer-spin-button,
+    #saleItemsTable .js-item-discount::-webkit-inner-spin-button,
+    #saleItemsTable .js-item-discount::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
     @media (min-width: 768px) {
       #saleItemsTable .sale-form-col-qty { width: 100px; }
       #saleItemsTable .sale-form-col-price { width: 130px; }
       #saleItemsTable .sale-form-col-discount { width: 130px; }
       #saleItemsTable .sale-form-col-total { width: 130px; }
       #saleItemsTable .sale-form-col-actions { width: 50px; }
-      #ingredientsTable .sale-form-col-qty { width: 160px; }
-      #ingredientsTable .sale-form-col-stock { width: 120px; }
-      #ingredientsTable .sale-form-col-actions { width: 50px; }
     }
 
     .tz-phone-prefix {
@@ -236,13 +260,13 @@
   <script>
     window.saleFormData = {
       items: @json($itemOptions),
-      ingredients: @json($ingredientOptions),
+      ingredients: [],
       customers: @json($customerOptions),
-      requireIngredients: @json((bool) $requireIngredients),
+      requireIngredients: false,
     };
     window.saleFormInitial = {
       items: @json($initialItems),
-      ingredients: @json($initialIngredients),
+      ingredients: [],
     };
   </script>
   <script src="{{ asset('panel-assets/js/sale-form.js') }}"></script>

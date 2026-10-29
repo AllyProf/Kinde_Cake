@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Customer;
 use App\Models\Sale;
 use App\Models\SmsMessage;
 use App\Models\User;
@@ -18,6 +19,15 @@ class CakePointService
 
     /**
      * @param  array<int, array{item_id: int, quantity: float}>  $items
+     * @param  array{
+     *     ready_at?: ?string,
+     *     customer_birthday?: ?string,
+     *     advance_amount?: float|null,
+     *     payment_method?: ?string,
+     *     payment_provider_id?: ?int,
+     *     payment_reference?: ?string,
+     *     credit_repayment_date?: ?string
+     * }  $options
      */
     public function createAndAssign(
         User $owner,
@@ -28,6 +38,7 @@ class CakePointService
         ?string $customerPhone,
         ?string $notes,
         bool $sendSms,
+        array $options = [],
     ): Sale {
         if (! $owner->isOwner()) {
             abort(403, 'Only the owner can send orders to the cake point.');
@@ -41,7 +52,14 @@ class CakePointService
             ]);
         }
 
-        $sale = DB::transaction(function () use ($owner, $staff, $items, $customerId, $customerName, $customerPhone, $notes) {
+        $customerId = $this->syncCustomerBirthday(
+            $customerId,
+            $customerName,
+            $customerPhone,
+            $options['customer_birthday'] ?? null,
+        );
+
+        $sale = DB::transaction(function () use ($owner, $staff, $items, $customerId, $customerName, $customerPhone, $notes, $options) {
             $sale = $this->sales->createCakePointOrder(
                 $owner,
                 $items,
@@ -49,6 +67,7 @@ class CakePointService
                 $customerName,
                 $customerPhone,
                 $notes,
+                $options['ready_at'] ?? null,
             );
 
             $sale->update($this->assignmentPayload($staff, $owner));
@@ -56,11 +75,77 @@ class CakePointService
             return $sale->fresh(['items.item']);
         });
 
+        $advanceAmount = (float) ($options['advance_amount'] ?? 0);
+        if ($advanceAmount > 0) {
+            $readyAt = $options['ready_at'] ?? null;
+            $balanceDueDate = $options['credit_repayment_date']
+                ?? ($readyAt ? \Carbon\Carbon::parse($readyAt)->toDateString() : now()->toDateString());
+
+            $this->sales->pay(
+                $owner,
+                $sale,
+                $advanceAmount,
+                $options['payment_method'] ?? Sale::PAYMENT_CASH,
+                isset($options['payment_provider_id']) ? (int) $options['payment_provider_id'] : null,
+                $options['payment_reference'] ?? null,
+                $customerId,
+                $customerName,
+                $customerPhone,
+                $balanceDueDate,
+            );
+            $sale->refresh();
+        }
+
         if ($sendSms) {
             $this->notifyStaff($owner, $sale, $staff);
         }
 
-        return $sale->fresh(['assignedTo', 'assignedBy', 'items.item', 'user']);
+        return $sale->fresh(['assignedTo', 'assignedBy', 'items.item', 'user', 'payments']);
+    }
+
+    private function syncCustomerBirthday(
+        ?int $customerId,
+        ?string $customerName,
+        ?string $customerPhone,
+        ?string $birthday,
+    ): ?int {
+        if (! filled($birthday)) {
+            return $customerId;
+        }
+
+        if ($customerId) {
+            Customer::query()->whereKey($customerId)->update(['birthday' => $birthday]);
+
+            return $customerId;
+        }
+
+        if (! filled($customerPhone)) {
+            return null;
+        }
+
+        $customer = Customer::query()->where('phone', $customerPhone)->first();
+
+        if ($customer) {
+            $customer->update([
+                'birthday' => $birthday,
+                'name' => filled($customerName) ? $customerName : $customer->name,
+            ]);
+
+            return $customer->id;
+        }
+
+        if (! filled($customerName)) {
+            return null;
+        }
+
+        $customer = Customer::create([
+            'name' => $customerName,
+            'phone' => $customerPhone,
+            'birthday' => $birthday,
+            'is_active' => true,
+        ]);
+
+        return $customer->id;
     }
 
     public function assign(Sale $sale, User $owner, User $staff, bool $sendSms = false): Sale
