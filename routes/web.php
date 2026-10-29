@@ -7,6 +7,7 @@ use App\Http\Controllers\DayCloseController;
 use App\Http\Controllers\DayReportController;
 use App\Http\Controllers\CakePointController;
 use App\Http\Controllers\DebtController;
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\CategoryController;
@@ -73,7 +74,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/day-closes/staff', [DayCloseController::class, 'storeStaff'])->name('day-closes.staff.store');
     });
 
+    Route::middleware('permission:expenses.view')->group(function () {
+        Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+    });
+
     Route::middleware('permission:expenses.manage')->group(function () {
+        Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+        Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
         Route::post('/day-closes/expenses', [DayCloseController::class, 'storeExpense'])->name('day-closes.expenses.store');
         Route::delete('/day-closes/expenses/{expense}', [DayCloseController::class, 'destroyExpense'])->name('day-closes.expenses.destroy');
     });

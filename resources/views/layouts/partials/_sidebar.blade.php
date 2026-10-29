@@ -1,7 +1,7 @@
 @php
   $user = auth()->user();
 
-  $salesOrdersActive = request()->routeIs('sales.*', 'customer-orders.*', 'debts.*', 'cake-point.*', 'day-closes.*');
+  $salesOrdersActive = request()->routeIs('sales.*', 'customer-orders.*', 'debts.*', 'cake-point.*', 'day-closes.*', 'expenses.*');
   $reportsActive = request()->routeIs('day-reports.*', 'business-trends.*');
   $customersSmsActive = request()->routeIs('customers.*', 'sms.*');
   $inventoryActive = request()->routeIs('ingredients.*', 'receivings.*', 'stock.*', 'ingredient-usages.*');
@@ -9,6 +9,7 @@
   $adminActive = request()->routeIs('roles.*', 'staff.*', 'audit-logs.*', 'settings.*');
 
   $canViewOrders = $user->hasPermission('orders.view');
+  $canViewExpenses = $user->hasPermission('expenses.view') || $user->hasPermission('expenses.manage');
   $canViewCustomers = $user->hasPermission('customers.view');
   $canViewSms = $user->canViewSms();
   $canViewInventory = $user->hasPermission('inventory.view');
@@ -22,7 +23,7 @@
   $canViewFinancials = $isOwner || $canViewReports;
   $canViewDebts = $canViewFinancials || $user->hasPermission('orders.create');
 
-  $showSalesOrders = $canViewOrders;
+  $showSalesOrders = $canViewOrders || $canViewExpenses;
   $showCustomersSms = $canViewCustomers || $canViewSms;
   $showReports = $canViewReports;
   $showCatalog = $canViewCatalog;
@@ -100,24 +101,26 @@
           <i class="treeview-indicator fa fa-angle-right"></i>
         </a>
         <ul class="treeview-menu">
-          <li>
-            <a class="treeview-item {{ request()->routeIs('sales.*') ? 'active' : '' }}" href="{{ route('sales.index') }}">
-              <i class="fa fa-list"></i> Sales
-            </a>
-          </li>
-          <li>
-            <a class="treeview-item {{ request()->routeIs('customer-orders.*') ? 'active' : '' }}" href="{{ route('customer-orders.index') }}">
-              <i class="fa fa-calendar-check-o"></i> Customer Orders
-            </a>
-          </li>
-          <li>
-            <a class="treeview-item {{ request()->routeIs('cake-point.*') ? 'active' : '' }}" href="{{ route('cake-point.index') }}">
-              <i class="fa fa-birthday-cake"></i> Cake Point
-              @if($cakePointMenuCount > 0)
-                <span class="badge badge-warning ml-1">{{ $cakePointMenuCount > 9 ? '9+' : $cakePointMenuCount }}</span>
-              @endif
-            </a>
-          </li>
+          @if($canViewOrders)
+            <li>
+              <a class="treeview-item {{ request()->routeIs('sales.*') ? 'active' : '' }}" href="{{ route('sales.index') }}">
+                <i class="fa fa-list"></i> Sales
+              </a>
+            </li>
+            <li>
+              <a class="treeview-item {{ request()->routeIs('customer-orders.*') ? 'active' : '' }}" href="{{ route('customer-orders.index') }}">
+                <i class="fa fa-calendar-check-o"></i> Customer Orders
+              </a>
+            </li>
+            <li>
+              <a class="treeview-item {{ request()->routeIs('cake-point.*') ? 'active' : '' }}" href="{{ route('cake-point.index') }}">
+                <i class="fa fa-birthday-cake"></i> Cake Point
+                @if($cakePointMenuCount > 0)
+                  <span class="badge badge-warning ml-1">{{ $cakePointMenuCount > 9 ? '9+' : $cakePointMenuCount }}</span>
+                @endif
+              </a>
+            </li>
+          @endif
           @if($canViewDebts)
             <li>
               <a class="treeview-item {{ request()->routeIs('debts.*') ? 'active' : '' }}" href="{{ route('debts.index') }}">
@@ -125,11 +128,20 @@
               </a>
             </li>
           @endif
-          <li>
-            <a class="treeview-item {{ request()->routeIs('day-closes.*') ? 'active' : '' }}" href="{{ route('day-closes.index') }}">
-              <i class="fa fa-calendar-check-o"></i> Close Day
-            </a>
-          </li>
+          @if($canViewExpenses)
+            <li>
+              <a class="treeview-item {{ request()->routeIs('expenses.*') ? 'active' : '' }}" href="{{ route('expenses.index') }}">
+                <i class="fa fa-money"></i> Expenses
+              </a>
+            </li>
+          @endif
+          @if($canViewOrders)
+            <li>
+              <a class="treeview-item {{ request()->routeIs('day-closes.*') ? 'active' : '' }}" href="{{ route('day-closes.index') }}">
+                <i class="fa fa-calendar-check-o"></i> Close Day
+              </a>
+            </li>
+          @endif
         </ul>
       </li>
     @endif
