@@ -20,7 +20,7 @@
           <div></div>
           <p>
             <button type="button" class="btn btn-primary icon-btn" data-toggle="modal" data-target="#customerModal">
-              <i class="fa fa-user"></i> Customer <span class="js-customer-required-mark text-warning">*</span>
+              <i class="fa fa-user"></i> Customer <span class="js-customer-required-mark text-warning d-none">*</span>
             </button>
           </p>
         </div>
@@ -31,8 +31,8 @@
             </div>
           @endif
 
-          <div class="sale-customer-chip mb-3 {{ filled(old('customer_name', $sale->customer_name)) && filled(old('customer_phone', $sale->customer_phone)) ? 'is-complete' : 'is-missing' }}" id="customerChip" role="button" data-toggle="modal" data-target="#customerModal" style="cursor:pointer;">
-            <i class="fa fa-user"></i> <span id="customerChipText">Customer required — tap Customer</span>
+          <div class="sale-customer-chip mb-3 {{ filled(old('customer_name', $sale->customer_name)) && filled(old('customer_phone', $sale->customer_phone)) ? 'is-complete' : '' }}" id="customerChip" role="button" data-toggle="modal" data-target="#customerModal" style="cursor:pointer;">
+            <i class="fa fa-user"></i> <span id="customerChipText">Optional customer — tap to add</span>
           </div>
 
           <form action="{{ route('sales.update', $sale) }}" method="POST" id="saleForm">
@@ -146,7 +146,7 @@
               </div>
               <div class="col-12 col-lg-4 col-md-6 js-sale-balance-due-field d-none">
                 <div class="form-group">
-                  <label class="control-label" for="saleCreditRepaymentDate">Balance due date</label>
+                    <label class="control-label" for="saleCreditRepaymentDate">Balance due date <span class="text-danger">*</span></label>
                   <input type="date" class="form-control @error('credit_repayment_date') is-invalid @enderror"
                     id="saleCreditRepaymentDate" name="credit_repayment_date"
                     value="{{ old('credit_repayment_date') }}">
@@ -169,7 +169,7 @@
               <a class="btn btn-secondary" href="{{ route('sales.index') }}">Back</a>
             </div>
             <small class="text-muted d-block mt-2" id="saleSubmitHint">
-              Add customer details and at least one item to save.
+              Add at least one item to save. Customer is required for orders, or when payment is below the total.
             </small>
           </form>
         </div>
@@ -369,7 +369,6 @@
         var amount = parseFloat(advanceAmount && advanceAmount.value) || 0;
         var method = paymentMethod ? paymentMethod.value : '';
         var needsProvider = method === 'mobile' || method === 'bank';
-        var mayLeaveBalance = amount > 0;
 
         if (paymentMethod) {
           paymentMethod.required = amount > 0;
@@ -379,9 +378,6 @@
         }
         if (referenceField) {
           referenceField.classList.toggle('d-none', !needsProvider);
-        }
-        if (balanceDueField) {
-          balanceDueField.classList.toggle('d-none', !mayLeaveBalance);
         }
 
         if (providerSelect && window.salesPaymentProviders) {
@@ -395,7 +391,9 @@
           });
         }
 
-        if (mayLeaveBalance && balanceDue && !balanceDue.value && readyAt && readyAt.value) {
+        // Balance due date visibility is handled by sale-form.js
+        // (only when amount paid leaves a remaining balance).
+        if (readyAt && balanceDue && balanceDueField && !balanceDueField.classList.contains('d-none') && !balanceDue.value && readyAt.value) {
           balanceDue.value = readyAt.value.slice(0, 10);
         }
       }

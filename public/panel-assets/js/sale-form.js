@@ -162,7 +162,15 @@
       return false;
     }
 
+    // Retail: customer is required when amount paid is below the total.
     return Math.round(amountPaid()) < total;
+  }
+
+  function hasOutstandingBalance() {
+    var total = Math.round(cartTotal());
+    var paid = Math.round(amountPaid());
+
+    return total > 0 && paid > 0 && paid < total;
   }
 
   function hasValidCustomer() {
@@ -176,11 +184,15 @@
   function syncSaleModeUi() {
     var orderMode = cartHasOrderItem();
     var needsCustomer = customerRequired();
+    var leavesBalance = hasOutstandingBalance();
     var $orderFields = $('.js-sale-order-fields');
     var $requiredMark = $('.js-customer-required-mark');
     var $heading = $('#salePaymentHeading');
     var $advanceLabel = $('#saleAdvanceLabel');
     var $advanceHint = $('#saleAdvanceHint');
+    var $balanceDueField = $('.js-sale-balance-due-field');
+    var $balanceDue = $('#saleCreditRepaymentDate');
+    var readyAt = $('#saleReadyAt').val() || '';
 
     $orderFields.toggleClass('d-none', !orderMode);
     $orderFields.find('input[name], select[name], textarea[name]').prop('disabled', !orderMode);
@@ -196,8 +208,20 @@
       $advanceHint.text(
         orderMode
           ? '0 = pay later. Enter full total to mark paid in full.'
-          : 'Pay in full for walk-in (no customer). Pay less and customer details are required.'
+          : 'Pay in full for walk-in (no customer needed). Pay less and customer details are required.'
       );
+    }
+
+    if ($balanceDueField.length) {
+      $balanceDueField.toggleClass('d-none', !leavesBalance);
+      if ($balanceDue.length) {
+        $balanceDue.prop('required', leavesBalance);
+        if (!leavesBalance) {
+          $balanceDue.val('');
+        } else if (!$balanceDue.val() && readyAt) {
+          $balanceDue.val(readyAt.slice(0, 10));
+        }
+      }
     }
 
     updateCustomerChip();
@@ -205,6 +229,10 @@
 
   function validateSaleForm() {
     if (customerRequired() && !hasValidCustomer()) {
+      return false;
+    }
+
+    if (hasOutstandingBalance() && !($('#saleCreditRepaymentDate').val() || '').trim()) {
       return false;
     }
 
@@ -224,9 +252,11 @@
     if (customerRequired() && !hasValidCustomer()) {
       $hint.text(
         cartHasOrderItem()
-          ? 'Add customer name and phone before saving.'
+          ? 'Add customer name and phone before saving (required for order items).'
           : 'Customer name and phone are required when amount paid is less than the total.'
       );
+    } else if (hasOutstandingBalance() && !$('#saleCreditRepaymentDate').val()) {
+      $hint.text('Set the balance due date for the remaining amount.');
     } else if (!hasValidItems()) {
       var needsCustomDetails = false;
       $('#saleItemsBody tr').each(function () {
@@ -465,10 +495,14 @@
         updateSubmitHint();
         return ok;
       },
-      extraEvents: $('#saleItemsBody, #ingredientsBody, #saleAdvanceAmount'),
+      extraEvents: $('#saleItemsBody, #ingredientsBody, #saleAdvanceAmount, #saleCreditRepaymentDate'),
     });
 
-    $('#saleAdvanceAmount').on('input change', function () {
+    $('#saleAdvanceAmount, #saleCreditRepaymentDate').on('input change', function () {
+      syncSaleModeUi();
+    });
+
+    $('#saleReadyAt').on('change', function () {
       syncSaleModeUi();
     });
 

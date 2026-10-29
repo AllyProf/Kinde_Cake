@@ -185,8 +185,11 @@ class SaleController extends Controller
         $paymentWarning = null;
         if ($advanceAmount > 0) {
             $sale->refresh();
-            $balanceDueDate = $validated['credit_repayment_date']
-                ?? ($sale->ready_at?->toDateString() ?: now()->toDateString());
+            $leavesBalance = $advanceAmount < (float) $sale->total;
+            $balanceDueDate = $leavesBalance
+                ? ($validated['credit_repayment_date']
+                    ?? ($sale->ready_at?->toDateString() ?: now()->toDateString()))
+                : null;
 
             try {
                 $this->sales->pay(
@@ -366,8 +369,11 @@ class SaleController extends Controller
         $paymentWarning = null;
         if ($advanceAmount > 0) {
             $sale->refresh();
-            $balanceDueDate = $validated['credit_repayment_date']
-                ?? ($sale->ready_at?->toDateString() ?: now()->toDateString());
+            $leavesBalance = $advanceAmount < (float) $sale->total;
+            $balanceDueDate = $leavesBalance
+                ? ($validated['credit_repayment_date']
+                    ?? ($sale->ready_at?->toDateString() ?: now()->toDateString()))
+                : null;
 
             try {
                 $this->sales->pay(
@@ -420,8 +426,11 @@ class SaleController extends Controller
             'credit_repayment_date' => ['nullable', 'date'],
         ]);
 
-        if ($validated['payment_method'] === Sale::PAYMENT_CREDIT
-            || (float) $validated['amount'] < $sale->balanceDue()) {
+        $paymentAmount = round((float) $validated['amount'], 2);
+        $leavesBalance = $validated['payment_method'] === Sale::PAYMENT_CREDIT
+            || $paymentAmount < round((float) $sale->balanceDue(), 2);
+
+        if ($leavesBalance) {
             $request->validate([
                 'credit_repayment_date' => ['required', 'date', 'after_or_equal:today'],
                 'customer_name' => ['required_without:customer_id', 'nullable', 'string', 'max:255'],
@@ -529,6 +538,7 @@ class SaleController extends Controller
 
         $cartTotal = $this->cartTotalFromItems($validated['items'] ?? []);
         $amountPaid = (float) ($validated['advance_amount'] ?? 0);
+        $leavesBalance = $cartTotal > 0 && $amountPaid > 0 && $amountPaid < $cartTotal;
         $requiresCustomer = $requiresOrderFlow || ($cartTotal > 0 && $amountPaid < $cartTotal);
 
         if ($requiresCustomer) {
@@ -547,6 +557,16 @@ class SaleController extends Controller
                         : 'Customer phone is required when amount paid is less than the total.',
                 ]);
             }
+        }
+
+        if ($leavesBalance && ! filled($validated['credit_repayment_date'] ?? null)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'credit_repayment_date' => 'Please set the balance due date for the remaining amount.',
+            ]);
+        }
+
+        if (! $leavesBalance) {
+            $validated['credit_repayment_date'] = null;
         }
 
         return $validated;

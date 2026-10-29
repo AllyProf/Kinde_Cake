@@ -125,7 +125,8 @@
       return false;
     }
 
-    return amount > 0 && amount < currentBalanceDue;
+    // Only when this payment leaves a remaining balance — not when settled in full.
+    return amount > 0 && Math.round(amount) < Math.round(currentBalanceDue);
   }
 
   function updateBalanceInfoFields() {

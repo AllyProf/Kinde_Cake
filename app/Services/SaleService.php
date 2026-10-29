@@ -250,7 +250,7 @@ class SaleService
                 $requiresBalanceInfo = true;
             } else {
                 $newAmountPaid = round((float) $sale->amount_paid + $amount, 2);
-                $isFullyPaid = $newAmountPaid >= (float) $sale->total;
+                $isFullyPaid = $newAmountPaid >= round((float) $sale->total, 2);
                 $requiresBalanceInfo = ! $isFullyPaid;
             }
 
