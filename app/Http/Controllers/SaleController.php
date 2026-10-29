@@ -207,7 +207,8 @@ class SaleController extends Controller
             }
         }
 
-        $shouldSendCustomerSms = $request->boolean('send_customer_sms');
+        $shouldSendCustomerSms = $request->boolean('send_customer_sms')
+            && $this->cartRequiresOrderFlow($validated['items'] ?? []);
         $smsWarning = null;
         if ($shouldSendCustomerSms) {
             $sale->loadMissing(['items.item']);
@@ -435,11 +436,13 @@ class SaleController extends Controller
     /** @return array<string, mixed> */
     private function validateSalePayload(Request $request): array
     {
+        $requiresOrderFlow = $this->cartRequiresOrderFlow($request->input('items', []));
+
         $validated = $request->validate([
             'cake_point_sale_id' => ['nullable', 'exists:sales,id'],
             'customer_id' => ['nullable', 'exists:customers,id'],
-            'customer_name' => ['required', 'string', 'max:255'],
-            'customer_phone' => ['required', 'string', 'max:30'],
+            'customer_name' => ['nullable', 'string', 'max:255'],
+            'customer_phone' => ['nullable', 'string', 'max:30'],
             'customer_birthday' => ['nullable', 'date'],
             'sold_at' => ['required', 'date'],
             'ready_at' => ['nullable', 'date'],
@@ -470,7 +473,72 @@ class SaleController extends Controller
             }
         }
 
+        if (! $requiresOrderFlow) {
+            $validated['ready_at'] = null;
+            $validated['customer_birthday'] = null;
+            $validated['send_customer_sms'] = false;
+        }
+
+        $cartTotal = $this->cartTotalFromItems($validated['items'] ?? []);
+        $amountPaid = (float) ($validated['advance_amount'] ?? 0);
+        $requiresCustomer = $requiresOrderFlow || ($cartTotal > 0 && $amountPaid < $cartTotal);
+
+        if ($requiresCustomer) {
+            if (! filled($validated['customer_name'] ?? null)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'customer_name' => $requiresOrderFlow
+                        ? 'Customer name is required for order items.'
+                        : 'Customer name is required when amount paid is less than the total.',
+                ]);
+            }
+
+            if (! filled($validated['customer_phone'] ?? null)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'customer_phone' => $requiresOrderFlow
+                        ? 'Customer phone is required for order items.'
+                        : 'Customer phone is required when amount paid is less than the total.',
+                ]);
+            }
+        }
+
         return $validated;
+    }
+
+    /**
+     * @param  array<int, array{quantity?: mixed, unit_price?: mixed, discount?: mixed}>  $items
+     */
+    private function cartTotalFromItems(array $items): float
+    {
+        return (float) collect($items)->sum(function (array $row) {
+            $qty = (float) ($row['quantity'] ?? 0);
+            $price = (float) ($row['unit_price'] ?? 0);
+            $discount = (float) ($row['discount'] ?? 0);
+            $line = ($qty * $price) - $discount;
+
+            return $line > 0 ? $line : 0;
+        });
+    }
+
+    /**
+     * @param  array<int, mixed>  $items
+     */
+    private function cartRequiresOrderFlow(array $items): bool
+    {
+        $itemIds = collect($items)
+            ->pluck('item_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($itemIds === []) {
+            return false;
+        }
+
+        return Item::query()
+            ->whereIn('id', $itemIds)
+            ->where('sale_type', Item::SALE_TYPE_ORDER)
+            ->exists();
     }
 
     private function salesRequireIngredients(): bool
@@ -526,6 +594,7 @@ class SaleController extends Controller
                 'name' => $item->name,
                 'price' => (float) $item->price,
                 'unit' => $item->packageUnit?->symbol,
+                'sale_type' => $item->sale_type ?: Item::SALE_TYPE_RETAIL,
             ])->values(),
             'ingredientOptions' => $ingredients->map(fn (Ingredient $ingredient) => [
                 'id' => $ingredient->id,

@@ -20,7 +20,7 @@
           <div></div>
           <p>
             <button type="button" class="btn btn-primary icon-btn" data-toggle="modal" data-target="#customerModal">
-              <i class="fa fa-user"></i> Customer <span class="text-warning">*</span>
+              <i class="fa fa-user"></i> Customer <span class="js-customer-required-mark text-warning">*</span>
             </button>
           </p>
         </div>
@@ -90,9 +90,9 @@
                 $existingAdvance = (float) ($saleFormInitial['existing_advance'] ?? 0);
               @endphp
 
-              <h5 class="mb-3">Pickup &amp; payment</h5>
+              <h5 class="mb-3" id="salePaymentHeading">Payment</h5>
               <div class="row">
-                <div class="col-12 col-lg-4 col-md-6">
+                <div class="col-12 col-lg-4 col-md-6 js-sale-order-fields">
                   <div class="form-group">
                     <label class="control-label" for="saleReadyAt">Ready / pickup date</label>
                     <input type="datetime-local" class="form-control @error('ready_at') is-invalid @enderror"
@@ -102,7 +102,7 @@
                     <small class="text-muted">When the cake / order should be ready.</small>
                   </div>
                 </div>
-                <div class="col-12 col-lg-4 col-md-6">
+                <div class="col-12 col-lg-4 col-md-6 js-sale-order-fields">
                   <div class="form-group">
                     <label class="control-label" for="saleCustomerBirthday">Customer birthday</label>
                     <input type="date" class="form-control @error('customer_birthday') is-invalid @enderror"
@@ -114,12 +114,12 @@
                 </div>
                 <div class="col-12 col-lg-4 col-md-6">
                   <div class="form-group">
-                    <label class="control-label" for="saleAdvanceAmount">Pay now / advance (TZS)</label>
+                    <label class="control-label" for="saleAdvanceAmount" id="saleAdvanceLabel">Amount paid (TZS)</label>
                     <input type="number" class="form-control @error('advance_amount') is-invalid @enderror"
                       id="saleAdvanceAmount" name="advance_amount" min="0" step="1"
                       value="{{ old('advance_amount', 0) }}" placeholder="0">
                     @error('advance_amount')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    <small class="text-muted">0 = pay later. Enter full total to mark paid in full.</small>
+                    <small class="text-muted" id="saleAdvanceHint">Enter the amount received now. Leave 0 to pay later.</small>
                   </div>
                 </div>
               </div>
@@ -192,7 +192,7 @@
                 @error('notes')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
 
-              <div class="form-group">
+              <div class="form-group js-sale-order-fields" id="saleSmsSection">
                 @if($smsReady ?? false)
                   <input type="hidden" name="send_customer_sms" value="0">
                   <div class="form-check">

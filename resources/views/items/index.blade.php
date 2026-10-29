@@ -68,6 +68,7 @@
                   <th>#</th>
                   <th>Item</th>
                   <th>Category</th>
+                  <th>Type</th>
                   <th>Unit</th>
                   <th>Price</th>
                   <th>Status</th>
@@ -85,6 +86,13 @@
                       @endif
                     </td>
                     <td>{{ $item->category?->name ?? '—' }}</td>
+                    <td>
+                      @if($item->isOrderType())
+                        <span class="badge badge-info">Order</span>
+                      @else
+                        <span class="badge badge-secondary">Retail</span>
+                      @endif
+                    </td>
                     <td>{{ $item->packageUnit?->symbol ?? '—' }}</td>
                     <td><strong>{{ $item->formattedPrice() }}</strong></td>
                     <td>

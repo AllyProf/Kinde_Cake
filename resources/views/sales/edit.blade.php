@@ -20,7 +20,7 @@
           <div></div>
           <p>
             <button type="button" class="btn btn-primary icon-btn" data-toggle="modal" data-target="#customerModal">
-              <i class="fa fa-user"></i> Customer <span class="text-warning">*</span>
+              <i class="fa fa-user"></i> Customer <span class="js-customer-required-mark text-warning">*</span>
             </button>
           </p>
         </div>
@@ -69,24 +69,26 @@
               Total: <span id="saleGrandTotal">0 TZS</span>
             </div>
 
-            <h5 class="mb-3">Pickup &amp; customer</h5>
-            <div class="row">
-              <div class="col-12 col-lg-4 col-md-6">
-                <div class="form-group">
-                  <label class="control-label" for="saleReadyAt">Ready / pickup date</label>
-                  <input type="datetime-local" class="form-control @error('ready_at') is-invalid @enderror"
-                    id="saleReadyAt" name="ready_at"
-                    value="{{ old('ready_at', $sale->ready_at?->format('Y-m-d\TH:i')) }}">
-                  @error('ready_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            <div class="js-sale-order-fields">
+              <h5 class="mb-3">Pickup &amp; customer</h5>
+              <div class="row">
+                <div class="col-12 col-lg-4 col-md-6">
+                  <div class="form-group">
+                    <label class="control-label" for="saleReadyAt">Ready / pickup date</label>
+                    <input type="datetime-local" class="form-control @error('ready_at') is-invalid @enderror"
+                      id="saleReadyAt" name="ready_at"
+                      value="{{ old('ready_at', $sale->ready_at?->format('Y-m-d\TH:i')) }}">
+                    @error('ready_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  </div>
                 </div>
-              </div>
-              <div class="col-12 col-lg-4 col-md-6">
-                <div class="form-group">
-                  <label class="control-label" for="saleCustomerBirthday">Customer birthday</label>
-                  <input type="date" class="form-control @error('customer_birthday') is-invalid @enderror"
-                    id="saleCustomerBirthday" name="customer_birthday"
-                    value="{{ old('customer_birthday', $sale->customer?->birthday?->format('Y-m-d')) }}">
-                  @error('customer_birthday')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <div class="col-12 col-lg-4 col-md-6">
+                  <div class="form-group">
+                    <label class="control-label" for="saleCustomerBirthday">Customer birthday</label>
+                    <input type="date" class="form-control @error('customer_birthday') is-invalid @enderror"
+                      id="saleCustomerBirthday" name="customer_birthday"
+                      value="{{ old('customer_birthday', $sale->customer?->birthday?->format('Y-m-d')) }}">
+                    @error('customer_birthday')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  </div>
                 </div>
               </div>
             </div>

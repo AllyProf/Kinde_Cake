@@ -56,6 +56,20 @@
       <small class="text-muted">Price per selected unit (e.g. per kg, per piece)</small>
     </div>
   </div>
+  <div class="col-md-6">
+    <div class="form-group">
+      <label class="control-label">Sale type <span class="text-danger">*</span></label>
+      <select class="form-control @error('sale_type') is-invalid @enderror" name="sale_type" required>
+        @foreach(\App\Models\Item::saleTypeOptions() as $value => $label)
+          <option value="{{ $value }}" @selected(old('sale_type', $record->sale_type ?? \App\Models\Item::SALE_TYPE_RETAIL) === $value)>
+            {{ $label }}
+          </option>
+        @endforeach
+      </select>
+      @error('sale_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
+      <small class="text-muted">Order items need a customer and pickup details on the sale form. Retail items are walk-in / quick pay.</small>
+    </div>
+  </div>
   <div class="col-md-12">
     <div class="form-group">
       <label class="control-label">Description</label>

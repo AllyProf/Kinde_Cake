@@ -46,6 +46,9 @@ class NotebookCatalogSeeder extends Seeder
                     'category_id' => $category->id,
                     'package_unit_id' => $unit->id,
                     'price' => $row['price'],
+                    'sale_type' => ($row['category'] ?? '') === 'cakes'
+                        ? Item::SALE_TYPE_ORDER
+                        : Item::SALE_TYPE_RETAIL,
                     'description' => $row['description'] ?? null,
                     'is_active' => true,
                 ]

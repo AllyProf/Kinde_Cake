@@ -102,6 +102,48 @@
     return valid;
   }
 
+  function cartHasOrderItem() {
+    var hasOrder = false;
+
+    $('#saleItemsBody tr').each(function () {
+      var item = itemById($(this).find('.js-item-select').val());
+      if (item && item.sale_type === 'order') {
+        hasOrder = true;
+        return false;
+      }
+    });
+
+    return hasOrder;
+  }
+
+  function cartTotal() {
+    var total = 0;
+    $('#saleItemsBody tr').each(function () {
+      var qty = parseFloat($(this).find('.js-item-qty').val()) || 0;
+      var price = parseFloat($(this).find('.js-item-price-input').val()) || 0;
+      var discount = parseFloat($(this).find('.js-item-discount').val()) || 0;
+      total += lineTotal(qty, price, discount);
+    });
+    return total;
+  }
+
+  function amountPaid() {
+    return parseFloat($('#saleAdvanceAmount').val()) || 0;
+  }
+
+  function customerRequired() {
+    if (cartHasOrderItem()) {
+      return true;
+    }
+
+    var total = Math.round(cartTotal());
+    if (total <= 0) {
+      return false;
+    }
+
+    return Math.round(amountPaid()) < total;
+  }
+
   function hasValidCustomer() {
     var name = ($('#customerNameInput').val() || '').trim();
     var phone = ($('#customerPhoneInput').val() || '').trim();
@@ -110,8 +152,38 @@
     return name.length > 0 && localDigits.length === 9;
   }
 
+  function syncSaleModeUi() {
+    var orderMode = cartHasOrderItem();
+    var needsCustomer = customerRequired();
+    var $orderFields = $('.js-sale-order-fields');
+    var $requiredMark = $('.js-customer-required-mark');
+    var $heading = $('#salePaymentHeading');
+    var $advanceLabel = $('#saleAdvanceLabel');
+    var $advanceHint = $('#saleAdvanceHint');
+
+    $orderFields.toggleClass('d-none', !orderMode);
+    $orderFields.find('input[name], select[name], textarea[name]').prop('disabled', !orderMode);
+    $requiredMark.toggleClass('d-none', !needsCustomer);
+
+    if ($heading.length) {
+      $heading.text(orderMode ? 'Pickup & payment' : 'Payment');
+    }
+    if ($advanceLabel.length) {
+      $advanceLabel.text(orderMode ? 'Pay now / advance (TZS)' : 'Amount paid (TZS)');
+    }
+    if ($advanceHint.length) {
+      $advanceHint.text(
+        orderMode
+          ? '0 = pay later. Enter full total to mark paid in full.'
+          : 'Pay in full for walk-in (no customer). Pay less and customer details are required.'
+      );
+    }
+
+    updateCustomerChip();
+  }
+
   function validateSaleForm() {
-    if (!hasValidCustomer()) {
+    if (customerRequired() && !hasValidCustomer()) {
       return false;
     }
 
@@ -128,8 +200,12 @@
       return;
     }
 
-    if (!hasValidCustomer()) {
-      $hint.text('Add customer name and phone before saving.');
+    if (customerRequired() && !hasValidCustomer()) {
+      $hint.text(
+        cartHasOrderItem()
+          ? 'Add customer name and phone before saving.'
+          : 'Customer name and phone are required when amount paid is less than the total.'
+      );
     } else if (!hasValidItems()) {
       $hint.text('Add at least one item to save.');
     } else if (requireIngredients && !hasValidIngredients()) {
@@ -165,33 +241,30 @@
   }
 
   function updateGrandTotal() {
-    var total = 0;
-    $('#saleItemsBody tr').each(function () {
-      var qty = parseFloat($(this).find('.js-item-qty').val()) || 0;
-      var price = parseFloat($(this).find('.js-item-price-input').val()) || 0;
-      var discount = parseFloat($(this).find('.js-item-discount').val()) || 0;
-      total += lineTotal(qty, price, discount);
-    });
-    $('#saleGrandTotal').text(formatMoney(total));
+    $('#saleGrandTotal').text(formatMoney(cartTotal()));
+    syncSaleModeUi();
   }
 
   function updateCustomerChip() {
     var name = ($('#customerNameInput').val() || '').trim();
     var phone = ($('#customerPhoneInput').val() || '').trim();
     var $chip = $('#customerChip');
-    var text = 'Customer required — tap Customer';
+    var needsCustomer = customerRequired();
+    var text = needsCustomer ? 'Customer required — tap Customer' : 'Optional customer — tap to add';
+    var complete = hasValidCustomer();
+    var missing = needsCustomer && !complete;
 
     if (name && phone) {
       text = name + ' · ' + phone;
     } else if (name) {
-      text = name + ' · phone required';
+      text = name + (needsCustomer ? ' · phone required' : ' · phone optional');
     } else if (phone) {
-      text = 'Name required · ' + phone;
+      text = (needsCustomer ? 'Name required · ' : 'Name optional · ') + phone;
     }
 
     $('#customerChipText').text(text);
-    $chip.toggleClass('is-missing', !hasValidCustomer());
-    $chip.toggleClass('is-complete', hasValidCustomer());
+    $chip.toggleClass('is-missing', missing);
+    $chip.toggleClass('is-complete', complete);
 
     if (refreshSubmitState) {
       refreshSubmitState();
@@ -253,6 +326,7 @@
         $row.find('.js-item-price-input').val(0);
       }
       updateItemRow($row);
+      syncSaleModeUi();
     });
 
     if (values.item_id) {
@@ -310,7 +384,11 @@
         updateSubmitHint();
         return ok;
       },
-      extraEvents: $('#saleItemsBody, #ingredientsBody'),
+      extraEvents: $('#saleItemsBody, #ingredientsBody, #saleAdvanceAmount'),
+    });
+
+    $('#saleAdvanceAmount').on('input change', function () {
+      syncSaleModeUi();
     });
 
     $('#customerModal').on('show.bs.modal', syncModalFromHidden);
@@ -395,6 +473,7 @@
 
       if (isItem) {
         updateGrandTotal();
+        syncSaleModeUi();
       }
 
       if (refreshSubmitState) {
@@ -437,6 +516,7 @@
     }
 
     updateGrandTotal();
+    syncSaleModeUi();
     updateSubmitHint();
     if (refreshSubmitState) {
       refreshSubmitState();

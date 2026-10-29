@@ -57,6 +57,7 @@ class ItemController extends Controller
             'category_id' => $validated['category_id'],
             'package_unit_id' => $validated['package_unit_id'],
             'price' => $validated['price'],
+            'sale_type' => $validated['sale_type'],
             'description' => $validated['description'] ?? null,
             'is_active' => $request->boolean('is_active', true),
         ]);
@@ -80,6 +81,7 @@ class ItemController extends Controller
             'category_id' => $validated['category_id'],
             'package_unit_id' => $validated['package_unit_id'],
             'price' => $validated['price'],
+            'sale_type' => $validated['sale_type'],
             'description' => $validated['description'] ?? null,
             'is_active' => $request->boolean('is_active', true),
         ]);
@@ -126,6 +128,7 @@ class ItemController extends Controller
                 Rule::exists('package_units', 'id')->where(fn ($query) => $query->where('is_active', true)),
             ],
             'price' => ['required', 'numeric', 'min:0', 'max:999999999.99'],
+            'sale_type' => ['required', Rule::in(array_keys(Item::saleTypeOptions()))],
             'description' => ['nullable', 'string', 'max:1000'],
         ]);
     }
