@@ -445,33 +445,36 @@
                       @endif
                     </td>
                     <td class="cake-point-actions text-center" data-label="Actions">
-                      <script type="application/json" id="cake-point-order-data-{{ $order->id }}">@json([
-                        'sale_number' => $order->sale_number,
-                        'ordered_at' => $order->sold_at->format('d M Y H:i'),
-                        'ready_at' => $order->ready_at?->format('d M Y H:i'),
-                        'customer_name' => $order->customer_name ?: 'Walk-in',
-                        'customer_phone' => $order->customer_phone ?: '',
-                        'notes' => $order->notes ?: '',
-                        'total' => $order->formattedTotal(),
-                        'amount_paid' => $order->formattedAmountPaid(),
-                        'balance_due' => $order->formattedBalanceDue(),
-                        'status' => $order->cakePointStatusLabel(),
-                        'sold_by' => $order->user?->name ?? '-',
-                        'assigned_to' => $order->assignedTo?->name ?? '-',
-                        'assigned_by' => $order->assignedBy?->name ?? '-',
-                        'items' => $order->items->map(function ($line) {
-                          return [
-                            'name' => $line->displayName(),
-                            'quantity' => number_format((float) $line->quantity, 0),
-                            'unit' => $line->item?->packageUnit?->symbol ?? '',
-                            'unit_price' => number_format((float) $line->unit_price, 0).' TZS',
-                            'discount' => (float) $line->discount > 0
-                              ? number_format((float) $line->discount, 0).' TZS'
-                              : '-',
-                            'line_total' => number_format((float) $line->line_total, 0).' TZS',
-                          ];
-                        })->values()->all(),
-                      ])</script>
+                      @php
+                        $cakePointOrderData = [
+                          'sale_number' => $order->sale_number,
+                          'ordered_at' => $order->sold_at->format('d M Y H:i'),
+                          'ready_at' => $order->ready_at?->format('d M Y H:i'),
+                          'customer_name' => $order->customer_name ?: 'Walk-in',
+                          'customer_phone' => $order->customer_phone ?: '',
+                          'notes' => $order->notes ?: '',
+                          'total' => $order->formattedTotal(),
+                          'amount_paid' => $order->formattedAmountPaid(),
+                          'balance_due' => $order->formattedBalanceDue(),
+                          'status' => $order->cakePointStatusLabel(),
+                          'sold_by' => $order->user?->name ?? '-',
+                          'assigned_to' => $order->assignedTo?->name ?? '-',
+                          'assigned_by' => $order->assignedBy?->name ?? '-',
+                          'items' => $order->items->map(function ($line) {
+                            return [
+                              'name' => $line->displayName(),
+                              'quantity' => number_format((float) $line->quantity, 0),
+                              'unit' => $line->item?->packageUnit?->symbol ?? '',
+                              'unit_price' => number_format((float) $line->unit_price, 0).' TZS',
+                              'discount' => (float) $line->discount > 0
+                                ? number_format((float) $line->discount, 0).' TZS'
+                                : '-',
+                              'line_total' => number_format((float) $line->line_total, 0).' TZS',
+                            ];
+                          })->values()->all(),
+                        ];
+                      @endphp
+                      <script type="application/json" id="cake-point-order-data-{{ $order->id }}">@json($cakePointOrderData)</script>
                       <button type="button"
                         class="btn btn-sm btn-outline-primary js-view-cake-point mb-1"
                         data-toggle="modal"
