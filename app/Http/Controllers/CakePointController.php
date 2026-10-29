@@ -41,7 +41,7 @@ class CakePointController extends Controller
 
         $query = Sale::query()
             ->visibleTo($request->user())
-            ->with(['user', 'assignedTo', 'assignedBy', 'items.item', 'convertedToSale.paymentProvider', 'convertedToSale.payments.user'])
+            ->with(['user', 'assignedTo', 'assignedBy', 'items.item.packageUnit', 'convertedToSale.paymentProvider', 'convertedToSale.payments.user'])
             ->whereNotIn('status', [Sale::STATUS_CANCELLED, Sale::STATUS_DELETED])
             ->latest('sold_at')
             ->latest('id');

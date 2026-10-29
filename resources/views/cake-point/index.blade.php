@@ -445,6 +445,41 @@
                       @endif
                     </td>
                     <td class="cake-point-actions text-center" data-label="Actions">
+                      @php
+                        $orderDetailPayload = [
+                          'sale_number' => $order->sale_number,
+                          'ordered_at' => $order->sold_at->format('d M Y H:i'),
+                          'ready_at' => $order->ready_at?->format('d M Y H:i'),
+                          'customer_name' => $order->customer_name ?: 'Walk-in',
+                          'customer_phone' => $order->customer_phone ?: '',
+                          'notes' => $order->notes ?: '',
+                          'total' => $order->formattedTotal(),
+                          'amount_paid' => $order->formattedAmountPaid(),
+                          'balance_due' => $order->formattedBalanceDue(),
+                          'status' => $order->cakePointStatusLabel(),
+                          'sold_by' => $order->user?->name ?? '—',
+                          'assigned_to' => $order->assignedTo?->name ?? '—',
+                          'assigned_by' => $order->assignedBy?->name ?? '—',
+                          'items' => $order->items->map(fn ($line) => [
+                            'name' => $line->displayName(),
+                            'quantity' => number_format((float) $line->quantity, 0),
+                            'unit' => $line->item?->packageUnit?->symbol ?? '',
+                            'unit_price' => number_format((float) $line->unit_price, 0).' TZS',
+                            'discount' => (float) $line->discount > 0
+                              ? number_format((float) $line->discount, 0).' TZS'
+                              : '—',
+                            'line_total' => number_format((float) $line->line_total, 0).' TZS',
+                          ])->values()->all(),
+                        ];
+                      @endphp
+                      <button type="button"
+                        class="btn btn-sm btn-outline-primary js-view-cake-point mb-1"
+                        data-toggle="modal"
+                        data-target="#cakePointViewModal"
+                        data-order="{{ e(json_encode($orderDetailPayload)) }}"
+                        title="View order details">
+                        <i class="fa fa-eye"></i>
+                      </button>
                       @if(auth()->user()->canPaySales() && $order->canBePaid() && ! $order->isCakePointCompleted())
                         <button type="button"
                           class="btn btn-sm btn-success js-pay-sale mb-1"
@@ -555,6 +590,66 @@
               {{ $orders->links() }}
             </div>
           @endif
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="cakePointViewModal" tabindex="-1" role="dialog" aria-labelledby="cakePointViewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="cakePointViewModalLabel">Order details</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <p class="mb-1"><strong>Sale:</strong> <span id="cpViewSaleNumber">—</span></p>
+              <p class="mb-1"><strong>Ordered:</strong> <span id="cpViewOrderedAt">—</span></p>
+              <p class="mb-1"><strong>Ready:</strong> <span id="cpViewReadyAt">—</span></p>
+              <p class="mb-1"><strong>Status:</strong> <span id="cpViewStatus">—</span></p>
+            </div>
+            <div class="col-md-6">
+              <p class="mb-1"><strong>Customer:</strong> <span id="cpViewCustomer">—</span></p>
+              <p class="mb-1"><strong>Sold by:</strong> <span id="cpViewSoldBy">—</span></p>
+              <p class="mb-1"><strong>Assigned to:</strong> <span id="cpViewAssignedTo">—</span></p>
+              <p class="mb-1"><strong>Ordered by:</strong> <span id="cpViewAssignedBy">—</span></p>
+            </div>
+          </div>
+
+          <h6 class="mb-2">Items</h6>
+          <div class="table-responsive mb-3">
+            <table class="table table-sm table-bordered mb-0">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Qty</th>
+                  <th>Price</th>
+                  <th>Discount</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody id="cpViewItemsBody"></tbody>
+            </table>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <p class="mb-1"><strong>Notes:</strong></p>
+              <p class="text-muted mb-0" id="cpViewNotes">—</p>
+            </div>
+            <div class="col-md-6 text-md-right">
+              <p class="mb-1"><strong>Total:</strong> <span id="cpViewTotal">—</span></p>
+              <p class="mb-1"><strong>Paid:</strong> <span id="cpViewPaid">—</span></p>
+              <p class="mb-0"><strong>Balance:</strong> <span id="cpViewBalance">—</span></p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
@@ -892,6 +987,80 @@
 
       form.addEventListener('submit', function () {
         clearTimeout(timer);
+      });
+    })();
+  </script>
+
+  <script>
+    (function () {
+      function setText(id, value) {
+        var el = document.getElementById(id);
+        if (el) {
+          el.textContent = value && String(value).trim() !== '' ? value : '—';
+        }
+      }
+
+      document.querySelectorAll('.js-view-cake-point').forEach(function (button) {
+        button.addEventListener('click', function () {
+          var order = {};
+          try {
+            order = JSON.parse(button.getAttribute('data-order') || '{}');
+          } catch (e) {
+            order = {};
+          }
+
+          setText('cpViewSaleNumber', order.sale_number);
+          setText('cpViewOrderedAt', order.ordered_at);
+          setText('cpViewReadyAt', order.ready_at);
+          setText('cpViewStatus', order.status);
+          setText(
+            'cpViewCustomer',
+            order.customer_phone
+              ? (order.customer_name + ' · ' + order.customer_phone)
+              : order.customer_name
+          );
+          setText('cpViewSoldBy', order.sold_by);
+          setText('cpViewAssignedTo', order.assigned_to);
+          setText('cpViewAssignedBy', order.assigned_by);
+          setText('cpViewNotes', order.notes);
+          setText('cpViewTotal', order.total);
+          setText('cpViewPaid', order.amount_paid);
+          setText('cpViewBalance', order.balance_due);
+
+          var title = document.getElementById('cakePointViewModalLabel');
+          if (title) {
+            title.textContent = order.sale_number
+              ? ('Order ' + order.sale_number)
+              : 'Order details';
+          }
+
+          var body = document.getElementById('cpViewItemsBody');
+          if (!body) {
+            return;
+          }
+
+          body.innerHTML = '';
+          var items = Array.isArray(order.items) ? order.items : [];
+          if (!items.length) {
+            body.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No items</td></tr>';
+            return;
+          }
+
+          items.forEach(function (item) {
+            var qty = item.quantity || '0';
+            if (item.unit) {
+              qty += ' ' + item.unit;
+            }
+            var row = document.createElement('tr');
+            row.innerHTML =
+              '<td>' + (item.name || '—') + '</td>' +
+              '<td>' + qty + '</td>' +
+              '<td>' + (item.unit_price || '—') + '</td>' +
+              '<td>' + (item.discount || '—') + '</td>' +
+              '<td><strong>' + (item.line_total || '—') + '</strong></td>';
+            body.appendChild(row);
+          });
+        });
       });
     })();
   </script>
