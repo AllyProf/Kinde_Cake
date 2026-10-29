@@ -445,37 +445,38 @@
                       @endif
                     </td>
                     <td class="cake-point-actions text-center" data-label="Actions">
+                      <script type="application/json" id="cake-point-order-data-{{ $order->id }}">@json([
+                        'sale_number' => $order->sale_number,
+                        'ordered_at' => $order->sold_at->format('d M Y H:i'),
+                        'ready_at' => $order->ready_at?->format('d M Y H:i'),
+                        'customer_name' => $order->customer_name ?: 'Walk-in',
+                        'customer_phone' => $order->customer_phone ?: '',
+                        'notes' => $order->notes ?: '',
+                        'total' => $order->formattedTotal(),
+                        'amount_paid' => $order->formattedAmountPaid(),
+                        'balance_due' => $order->formattedBalanceDue(),
+                        'status' => $order->cakePointStatusLabel(),
+                        'sold_by' => $order->user?->name ?? '-',
+                        'assigned_to' => $order->assignedTo?->name ?? '-',
+                        'assigned_by' => $order->assignedBy?->name ?? '-',
+                        'items' => $order->items->map(function ($line) {
+                          return [
+                            'name' => $line->displayName(),
+                            'quantity' => number_format((float) $line->quantity, 0),
+                            'unit' => $line->item?->packageUnit?->symbol ?? '',
+                            'unit_price' => number_format((float) $line->unit_price, 0).' TZS',
+                            'discount' => (float) $line->discount > 0
+                              ? number_format((float) $line->discount, 0).' TZS'
+                              : '-',
+                            'line_total' => number_format((float) $line->line_total, 0).' TZS',
+                          ];
+                        })->values()->all(),
+                      ])</script>
                       <button type="button"
                         class="btn btn-sm btn-outline-primary js-view-cake-point mb-1"
                         data-toggle="modal"
                         data-target="#cakePointViewModal"
-                        data-order="{{ e(json_encode([
-                          'sale_number' => $order->sale_number,
-                          'ordered_at' => $order->sold_at->format('d M Y H:i'),
-                          'ready_at' => $order->ready_at?->format('d M Y H:i'),
-                          'customer_name' => $order->customer_name ?: 'Walk-in',
-                          'customer_phone' => $order->customer_phone ?: '',
-                          'notes' => $order->notes ?: '',
-                          'total' => $order->formattedTotal(),
-                          'amount_paid' => $order->formattedAmountPaid(),
-                          'balance_due' => $order->formattedBalanceDue(),
-                          'status' => $order->cakePointStatusLabel(),
-                          'sold_by' => $order->user?->name ?? '—',
-                          'assigned_to' => $order->assignedTo?->name ?? '—',
-                          'assigned_by' => $order->assignedBy?->name ?? '—',
-                          'items' => $order->items->map(function ($line) {
-                            return [
-                              'name' => $line->displayName(),
-                              'quantity' => number_format((float) $line->quantity, 0),
-                              'unit' => $line->item?->packageUnit?->symbol ?? '',
-                              'unit_price' => number_format((float) $line->unit_price, 0).' TZS',
-                              'discount' => (float) $line->discount > 0
-                                ? number_format((float) $line->discount, 0).' TZS'
-                                : '—',
-                              'line_total' => number_format((float) $line->line_total, 0).' TZS',
-                            ];
-                          })->values()->all(),
-                        ])) }}"
+                        data-order-id="{{ $order->id }}"
                         title="View order details">
                         <i class="fa fa-eye"></i>
                       </button>
@@ -999,66 +1000,75 @@
         }
       }
 
+      function loadOrder(orderId) {
+        var dataEl = document.getElementById('cake-point-order-data-' + orderId);
+        if (!dataEl) {
+          return {};
+        }
+        try {
+          return JSON.parse(dataEl.textContent || '{}');
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function fillModal(order) {
+        setText('cpViewSaleNumber', order.sale_number);
+        setText('cpViewOrderedAt', order.ordered_at);
+        setText('cpViewReadyAt', order.ready_at);
+        setText('cpViewStatus', order.status);
+        setText(
+          'cpViewCustomer',
+          order.customer_phone
+            ? (order.customer_name + ' · ' + order.customer_phone)
+            : order.customer_name
+        );
+        setText('cpViewSoldBy', order.sold_by);
+        setText('cpViewAssignedTo', order.assigned_to);
+        setText('cpViewAssignedBy', order.assigned_by);
+        setText('cpViewNotes', order.notes);
+        setText('cpViewTotal', order.total);
+        setText('cpViewPaid', order.amount_paid);
+        setText('cpViewBalance', order.balance_due);
+
+        var title = document.getElementById('cakePointViewModalLabel');
+        if (title) {
+          title.textContent = order.sale_number
+            ? ('Order ' + order.sale_number)
+            : 'Order details';
+        }
+
+        var body = document.getElementById('cpViewItemsBody');
+        if (!body) {
+          return;
+        }
+
+        body.innerHTML = '';
+        var items = Array.isArray(order.items) ? order.items : [];
+        if (!items.length) {
+          body.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No items</td></tr>';
+          return;
+        }
+
+        items.forEach(function (item) {
+          var qty = item.quantity || '0';
+          if (item.unit) {
+            qty += ' ' + item.unit;
+          }
+          var row = document.createElement('tr');
+          row.innerHTML =
+            '<td>' + (item.name || '—') + '</td>' +
+            '<td>' + qty + '</td>' +
+            '<td>' + (item.unit_price || '—') + '</td>' +
+            '<td>' + (item.discount || '—') + '</td>' +
+            '<td><strong>' + (item.line_total || '—') + '</strong></td>';
+          body.appendChild(row);
+        });
+      }
+
       document.querySelectorAll('.js-view-cake-point').forEach(function (button) {
         button.addEventListener('click', function () {
-          var order = {};
-          try {
-            order = JSON.parse(button.getAttribute('data-order') || '{}');
-          } catch (e) {
-            order = {};
-          }
-
-          setText('cpViewSaleNumber', order.sale_number);
-          setText('cpViewOrderedAt', order.ordered_at);
-          setText('cpViewReadyAt', order.ready_at);
-          setText('cpViewStatus', order.status);
-          setText(
-            'cpViewCustomer',
-            order.customer_phone
-              ? (order.customer_name + ' · ' + order.customer_phone)
-              : order.customer_name
-          );
-          setText('cpViewSoldBy', order.sold_by);
-          setText('cpViewAssignedTo', order.assigned_to);
-          setText('cpViewAssignedBy', order.assigned_by);
-          setText('cpViewNotes', order.notes);
-          setText('cpViewTotal', order.total);
-          setText('cpViewPaid', order.amount_paid);
-          setText('cpViewBalance', order.balance_due);
-
-          var title = document.getElementById('cakePointViewModalLabel');
-          if (title) {
-            title.textContent = order.sale_number
-              ? ('Order ' + order.sale_number)
-              : 'Order details';
-          }
-
-          var body = document.getElementById('cpViewItemsBody');
-          if (!body) {
-            return;
-          }
-
-          body.innerHTML = '';
-          var items = Array.isArray(order.items) ? order.items : [];
-          if (!items.length) {
-            body.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No items</td></tr>';
-            return;
-          }
-
-          items.forEach(function (item) {
-            var qty = item.quantity || '0';
-            if (item.unit) {
-              qty += ' ' + item.unit;
-            }
-            var row = document.createElement('tr');
-            row.innerHTML =
-              '<td>' + (item.name || '—') + '</td>' +
-              '<td>' + qty + '</td>' +
-              '<td>' + (item.unit_price || '—') + '</td>' +
-              '<td>' + (item.discount || '—') + '</td>' +
-              '<td><strong>' + (item.line_total || '—') + '</strong></td>';
-            body.appendChild(row);
-          });
+          fillModal(loadOrder(button.getAttribute('data-order-id')));
         });
       });
     })();
